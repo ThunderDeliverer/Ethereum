@@ -1,0 +1,44 @@
+//This is needend in order to specify the version of solidity used. Without it the code won't compile.
+pragma solidity 0.4.2;
+
+contract myAlphaToken {
+    //This maps addresses to amount of tokens they own.
+    mapping (address => uint256) public balanceOf;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
+    //Events are empty functions that are called to keep track of activities happening in the contract.
+    //They have to start with capital letter.
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    //This fuction is called when deploying contract.
+    function myAlphaToken(uint256 initialBalance, string tokenName, uint8 decimalUnits, string tokenSymbol) {
+        //This grants the owner of the contract the "initialBalance" of tokens.
+        balanceOf[msg.sender] = initialBalance;
+        //Sets the name for display purposes.
+        name = tokenName;
+        //Sets the symbol for display purposes.
+        symbol = tokenSymbol;
+        //Sets the amount of decimals used by this token.
+        decimals = decimalUnits;
+    }
+
+    //The following enables transferring of coins between peers.
+    function transfer(address _to, uint _value){
+        //This checks if sender has more funds than he wishes to send and if he wants to send amount
+        //low enough that it doesn't result in overflow(value jumping back to 0).
+        if(balanceOf[msg.sender] <= _value || balanceOf[_to] + _value < balanceOf[_to]){
+            //"return" could also be used in stead of "throw", but throw makes sure that all of the changes initiated
+            //by the contract prior to it are reversed. It unfortunately uses more gas than return.
+            throw;
+        }
+
+        //This substract the token number from sender and adds it to receiver.
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+
+        //This notifies anyone listening that transfer took place.
+        Transfer(msg.sender, _to, _value);
+    }
+}
