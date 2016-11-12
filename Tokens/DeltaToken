@@ -1,0 +1,143 @@
+//This is needend in order to specify the version of solidity used. Without it the code won't compile.
+pragma solidity 0.4.2;
+
+//This contract specifies the owner and main manager of the currency.
+//It also defines the transfer of ownership if required.
+contract owned{
+  address public owner;
+
+  function owned(){
+    owner = msg.sender;
+  }
+
+  modifier onlyOwner{
+    if(msg.sender != owner) throw;
+    _;
+  }
+
+  function transferOwnership (address newOwner) onlyOwner{
+    owner = newOwner;
+  }
+}
+
+//myBetaToken inherits proprieties from "owned".
+contract myDeltaToken is owned{
+    //This maps addresses to amount of tokens they own.
+    mapping (address => uint256) public balanceOf;
+    //This maps addresses with permissions if they can transfer and receive funds or not.
+    mapping (address => bool) public frozenAccount;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 totalSupply;
+    uint256 public sellPrice;
+    uint256 public buyPrice;
+
+    //Events are empty functions that are called to keep track of activities happening in the contract.
+    //They have to start with capital letter.
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event FrozenFunds(address target, bool frozen);
+
+    //This fuction is called when deploying contract.
+    function myDeltaToken(uint256 initialBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter) {
+        //This grants the owner of the contract the "initialBalance" of tokens.
+        balanceOf[msg.sender] = initialBalance;
+        //Sets the name for display purposes.
+        name = tokenName;
+        //Sets the amount of decimals used by this token.
+        decimals = decimalUnits;
+        //Sets the symbol for display purposes.
+        symbol = tokenSymbol;
+        //Sets owner of the contract.
+        if(centralMinter != 0) owner = centralMinter;
+        //Variable that saves total value of all tokens in order to be able to control and manage quantity and value of currency.
+        totalSupply = initialBalance;
+    }
+
+    //The following enables transferring of coins between peers.
+    function transfer(address _to, uint _value){
+        //This throws the transfer if sender's account is frozen.
+        if (frozenAccount[msg.sender]) throw;
+        //This checks if sender has more funds than he wishes to send and if he wants to send amount
+        //low enough that it doesn't result in overflow(value jumping back to 0).
+        if(balanceOf[msg.sender] <= _value || balanceOf[_to] + _value < balanceOf[_to]){
+            //"return" could also be used in stead of "throw", but throw makes sure that all of the changes initiated
+            //by the contract prior to it are reversed. It unfortunately uses more gas than return.
+            throw;
+        }
+
+        //This substract the token number from sender and adds it to receiver.
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+
+        //This notifies anyone listening that transfer took place.
+        Transfer(msg.sender, _to, _value);
+    }
+
+    //This function enables owner to create new tokens.
+    function mintToken(address target, uint256 mintedAmount) onlyOwner{
+      //Adds currency to target account in our database.
+      balanceOf[target] += mintedAmount;
+      //Adds the amount we want to mint to total pool of currency.
+      totalSupply += mintedAmount;
+      //First adds the desired amount to owner account.
+      Transfer(0, owner, mintedAmount);
+      //Then transfers the created currency to target address.
+      Transfer(owner, target, mintedAmount);
+    }
+
+    //This makes all accounts unfrozen by default, but adds the ability for the administrator of currency to freeze an account.
+    function freezeAccount(address target, bool freeze) onlyOwner{
+      frozenAccount[target] = freeze;
+      FrozenFunds(target, freeze);
+    }
+
+    //This allows owner to set sell and buy price in Ether for tokens.
+    //While this function gets the job done and allows for value changes, if requires a lot of
+    //maintenance, since admin has to call it for every price change. This could be solved with standard data feeds and will
+    //probably implemented in one of future versions.
+    //Minimum of currency is set as wei and one Ether is 10^18 wei.
+    function setPrices(uint256 newSellPrice, uint256 newBuyPrice) onlyOwner{
+      sellPrice = newSellPrice;
+      buyPrice= newBuyPrice;
+    }
+
+    //Function that enables purchase of tokens with Ether.
+    function buy() payable returns (uint amount){
+      //Calculate the amount of tokens initiator gets for Ether he paid.
+      amount = msg.value / buyPrice;
+      //Throw if there is enough tokens to sell in owners's purse.
+      if (balanceOf[this] < amount) throw;
+      //Adds the amount to buyers account.
+      balanceOf[msg.sender] += amount;
+      //Substracts the amount of bought tokens from the owner's balance.
+      balanceOf[this] -= amount;
+      //Initiates the Transfer() event in order to notify others.
+      Transfer(this, msg.sender, amount);
+      //Ends function and returns the amount.
+      return amount;
+    }
+
+    //Function that enables selling of tokens for Ether.
+    function sell(uint amount) returns (uint revenue){
+      //Check if seller has enought tokens to sell the desired amount.
+      if (balanceOf[msg.sender] < amount) throw;
+      //Adds the amount to owner's balance.
+      balanceOf[this] += amount;
+      //Substracts amount from seller's balance.
+      balanceOf[msg.sender] -= amount;
+      //Calculate revenue from sale.
+      revenue = amount * sellPrice;
+      //Send Ether to the seller.
+      if(!msg.sender.send(revenue)){
+        //Throw to prevwnt recursion attacks.
+        throw;
+      }
+      else{
+        //Notify other nodes of the transaction.
+        Transfer(msg.sender, this, amount);
+        //end function and return revenue.
+        return revenue;
+      }
+    }
+}
