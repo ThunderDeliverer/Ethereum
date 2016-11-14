@@ -58,6 +58,8 @@ contract myDeltaToken is owned{
     function transfer(address _to, uint _value){
         //This throws the transfer if sender's account is frozen.
         if (frozenAccount[msg.sender]) throw;
+        //Prevents sending tokens to frozen accounts.
+        if (frozenAccount[_to]) throw;
         //This checks if sender has more funds than he wishes to send and if he wants to send amount
         //low enough that it doesn't result in overflow(value jumping back to 0).
         if(balanceOf[msg.sender] <= _value || balanceOf[_to] + _value < balanceOf[_to]){
@@ -107,6 +109,8 @@ contract myDeltaToken is owned{
     //I suggest minting certain amount of tokens to the contract address as soon as
     //contract is created.
     function buy() payable returns (uint amount){
+      //Prevents purchase of tokens for frozen accounts.
+      if (frozenAccount[msg.sender]) throw;
       //Calculate the amount of tokens initiator gets for Ether he paid.
       amount = msg.value / buyPrice;
       //Throw if there is enough tokens to sell in owners's purse.
@@ -123,6 +127,8 @@ contract myDeltaToken is owned{
 
     //Function that enables selling of tokens for Ether.
     function sell(uint amount) returns (uint revenue){
+      //Prevents exchanging of tokens for Ether for frozen accounts.
+      if (frozenAccount[msg.sender]) throw;
       //Check if seller has enought tokens to sell the desired amount.
       if (balanceOf[msg.sender] < amount) throw;
       //Adds the amount to owner's balance.
