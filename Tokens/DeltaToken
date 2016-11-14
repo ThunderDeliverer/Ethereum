@@ -103,6 +103,9 @@ contract myDeltaToken is owned{
     }
 
     //Function that enables purchase of tokens with Ether.
+    //Please note that the function will fail if no tokens are assigned to the contract.
+    //I suggest minting certain amount of tokens to the contract address as soon as
+    //contract is created.
     function buy() payable returns (uint amount){
       //Calculate the amount of tokens initiator gets for Ether he paid.
       amount = msg.value / buyPrice;
