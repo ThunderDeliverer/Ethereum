@@ -99,7 +99,7 @@ contract myDeltaToken is owned{
     //Minimum of currency is set as wei and one Ether is 10^18 wei.
     function setPrices(uint256 newSellPrice, uint256 newBuyPrice) onlyOwner{
       sellPrice = newSellPrice;
-      buyPrice= newBuyPrice;
+      buyPrice = newBuyPrice;
     }
 
     //Function that enables purchase of tokens with Ether.
