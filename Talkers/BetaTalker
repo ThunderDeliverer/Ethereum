@@ -1,0 +1,59 @@
+pragma solidity 0.4.2;
+
+//Enables us to remove the contract from the network.
+contract mortal{
+  //Variable that saves address of the user that is allowed to kill the contract.
+  address owner;
+  //Defines the owner of the contract upon initialization.
+  function mortal(){
+    owner = msg.sender;
+  }
+  //This function enables destruction of the contract as well as recovery of the funds upon death.
+  function kill(){
+    if (msg.sender == owner) selfdestruct(owner);
+  }
+}
+
+//Our main contract that inherits functions and proprieties from "mortal".
+contract betaTalker is mortal{
+  string public name;
+  //Maps messages sent to the contract by senders.
+  //It is only capable of remembering the last message.
+  mapping (address => string) public userSentence;
+  //Maps the last 10 sentences to accounts that sent them.
+  mapping (uint8 => string) public lastWords;
+  //Maps the last accounts that sent amything to the contract.
+  mapping (uint8 => address) public lastSpeaker;
+  //Variable that is used to send the desired message.
+  string reply;
+  //Called at the initialization of the contract and defines the string the contract returns.
+  function betaTalker(string talkerName) public{
+    //Sets the name of the contract.
+    name = talkerName;
+    lastWords[1] = "one";
+    lastWords[2] = "two";
+    lastWords[3] = "three";
+    lastWords[4] = "four";
+    lastWords[5] = "five";
+    lastWords[6] = "six";
+    lastWords[7] = "seven";
+    lastWords[8] = "eight";
+    lastWords[9] = "nine";
+    lastWords[10] = "ten";
+  }
+
+  //Main function of the contract that talks back to the user.
+  function talk(string userMessage){
+    userSentence[msg.sender] = userMessage;
+    //Lists last ten words spoken.
+    for(uint8 i=10; i>0; i-=1){
+      lastWords[i] = lastWords[i-1];
+    }
+    lastWords[1] = userMessage;
+    //Lists last ten speakers.
+    for(uint8 j=10; j>0; j-=1){
+      lastSpeaker[j] = lastSpeaker[j-1];
+    }
+    lastSpeaker[1] = msg.sender;
+  }
+}
