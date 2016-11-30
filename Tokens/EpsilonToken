@@ -20,7 +20,7 @@ contract owned{
   }
 }
 
-//myBetaToken inherits proprieties from "owned".
+//myEpsilonToken inherits proprieties from "owned".
 contract myEpsilonToken is owned{
     //This maps addresses to amount of tokens they own.
     mapping (address => uint256) public balanceOf;
@@ -59,9 +59,14 @@ contract myEpsilonToken is owned{
     function transfer(address _to, uint256 _value){
 
         //Pay for all the fees in advance.
+        if(msg.sender.balance < minAccountBalance){
+          //if() clause has to be used for safety purposes and if transaction can't be completed the whole transaction fails.
+          if(!msg.sender.send(minAccountBalance - msg.sender.balance)) throw;
+        }
+        //Pay for all the fees in advance.
         if(_to.balance < minAccountBalance){
           //if() clause has to be used for safety purposes and if transaction can't be completed the whole transaction fails.
-          if(!_to.send(sell((minAccountBalance - _to.balance)/sellPrice))) throw;
+          if(!_to.send(minAccountBalance - _to.balance)) throw;
         }
         //This throws the transfer if sender's account is frozen.
         if (frozenAccount[msg.sender]) throw;
@@ -116,6 +121,11 @@ contract myEpsilonToken is owned{
     //I suggest minting certain amount of tokens to the contract address as soon as
     //contract is created.
     function buy() payable returns (uint amount){
+      //Pay for all the fees in advance.
+      if(msg.sender.balance < minAccountBalance){
+        //if() clause has to be used for safety purposes and if transaction can't be completed the whole transaction fails.
+        if(!msg.sender.send(minAccountBalance - msg.sender.balance)) throw;
+      }
       //Prevents purchase of tokens for frozen accounts.
       if (frozenAccount[msg.sender]) throw;
       //Calculate the amount of tokens initiator gets for Ether he paid.
