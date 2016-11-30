@@ -20,7 +20,7 @@ contract owned{
   }
 }
 
-//myBetaToken inherits proprieties from "owned".
+//myGammaToken inherits proprieties from "owned".
 contract myGammaToken is owned{
     //This maps addresses to amount of tokens they own.
     mapping (address => uint256) public balanceOf;
