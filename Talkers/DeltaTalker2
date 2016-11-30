@@ -1,0 +1,49 @@
+pragma solidity 0.4.2;
+
+//Enables us to remove the contract from the network.
+contract mortal{
+  //Variable that saves address of the user that is allowed to kill the contract.
+  address owner;
+  //Defines the owner of the contract upon initialization.
+  function mortal(){
+    owner = msg.sender;
+  }
+  //This function enables destruction of the contract as well as recovery of the funds upon death.
+  function kill(){
+    if (msg.sender == owner) selfdestruct(owner);
+  }
+}
+
+//Our main contract that inherits functions and proprieties from "mortal".
+contract deltaTalker is mortal{
+  string public name;
+  uint256 public numberOfMessages = 0;
+  //Maps messages sent to the contract by senders.
+  //It is only capable of remembering the last message.
+  mapping (address => string) public userSentence;
+  //Maps the last 10 sentences to accounts that sent them.
+  mapping (uint256 => string) public lastWords;
+  //Maps the last accounts that sent amything to the contract.
+  mapping (uint256 => address) public lastSpeaker;
+  //Variable that is used to send the desired message.
+  string reply;
+  //Mapping messages to the time they were sent.
+  mapping (uint256 => uint) public timeOfMessage;
+  //Called at the initialization of the contract and defines the string the contract returns.
+  function deltaTalker(string talkerName) public{
+    //Sets the name of the contract.
+    name = talkerName;
+  }
+
+  //Main function of the contract that talks back to the user.
+  function talk(string userMessage){
+    userSentence[msg.sender] = userMessage;
+    //Lists last words spoken.
+    lastWords[numberOfMessages] = userMessage;
+    //Lists last speakers.
+    lastSpeaker[numberOfMessages] = msg.sender;
+    //Lists times of messages.
+    timeOfMessage[numberOfMessages] = now;
+    numberOfMessages += 1;
+  }
+}
