@@ -14,3 +14,18 @@ DeltaToken:
 
 EspilonToken:
 0x72a363fAb43cb7BcDdC566b0c79D87C71D80b01f
+
+
+The issues with TEST-NET resulted in forced migration to Private-net (the public one), which forced me to redeploy contracts on the following addresses:
+
+AlphaToken:
+0x6274BEe245560e1A0f2012604Ec2cFa9c8C923F1
+
+BetaToken:
+0x06C38d6de471ede1637eEcA9C429aEc678489175
+
+GammaToken:
+0xBC5e33eCEB4A66f116fFe1be58090DaAcddC9a4d
+
+DeltaToken:
+0x1B7801D1BE223B44cDb00785794E0c7E2D704999
