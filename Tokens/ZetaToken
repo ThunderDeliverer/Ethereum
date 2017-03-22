@@ -20,13 +20,6 @@ contract owned{
   }
 }
 
-//Create a listing of all present accounts except the owner of the contract.
-//Do it with an expading array.
-//Done.
-
-//Create a minimum amount of tokens to buy(give the admin the ability to change it).
-//This will prevent for and flooding attacks.
-
 //myZetaToken inherits proprieties from "owned".
 contract myZetaToken is owned{
     //This maps addresses to amount of tokens they own.
