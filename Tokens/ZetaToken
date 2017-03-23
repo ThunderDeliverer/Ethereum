@@ -1,5 +1,5 @@
 //This is needend in order to specify the version of solidity used. Without it the code won't compile.
-pragma solidity 0.4.2;
+pragma solidity 0.4.8;
 
 //This contract specifies the owner and main manager of the currency.
 //It also defines the transfer of ownership if required.
@@ -27,7 +27,7 @@ contract myZetaToken is owned{
     //This maps addresses with permissions if they can transfer and receive funds or not.
     mapping (address => bool) public frozenAccount;
     //This maps an account as present account in the contract; the account owns or has owned tokens.
-    mapping (address => uint256) public accountRepository;
+    mapping (uint256 => address) public accountRepository;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -92,12 +92,12 @@ contract myZetaToken is owned{
         balanceOf[_to] += _value;
 
         //Build the library of participating enitities omitting owner.
-        if(msg.sender!=centralMinter){
+        if(msg.sender!=owner){
           //Makes sure we don't have duplicate addresses in the repository.
           bool isNotAnExistingAccount = true;
-          for(i=0; i<accountNumber; i++){
+          for(uint i=0; i<accountNumber; i++){
             if(accountRepository[i]==msg.sender){
-              bool isNotAnExistingAccount = false;
+              isNotAnExistingAccount = false;
             }
           }
           if(isNotAnExistingAccount){
