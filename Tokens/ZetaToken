@@ -94,11 +94,11 @@ contract myZetaToken is owned{
         acntRep: if(msg.sender!=centralMinter){
           //Makes sure we don't have duplicate addresses in the repository.
           for(i=0; i<accountNumber; i++){
-            if(accountRepository[i]==msg.sender.address){
+            if(accountRepository[i]==msg.sender){
               break acntRep;
             }
           }
-          accountRepository[accountNumber] = msg.sender.address;
+          accountRepository[accountNumber] = msg.sender;
           accountNumber+=1;
         }
 
