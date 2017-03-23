@@ -146,11 +146,11 @@ contract myZetaToken is owned{
       }
       //Prevents purchase of tokens for frozen accounts.
       if (frozenAccount[msg.sender]) throw;
-      //Checks if seller wants to buy amount of tokens lower than minimum allowed.
-      if (msg.value<minTransferAmount) throw;
       //Calculate the amount of tokens initiator gets for Ether he paid.
       amount = msg.value / buyPrice;
-      //Throw if there is enough tokens to sell in owners's purse.
+      //Checks if seller wants to buy amount of tokens lower than minimum allowed.
+      if (amount<minTransferAmount) throw;
+      //Throw if there isn't enough tokens to sell in owners's purse.
       if (balanceOf[this] < amount) throw;
       //Adds the amount to buyers account.
       balanceOf[msg.sender] += amount;
@@ -169,7 +169,7 @@ contract myZetaToken is owned{
       //Check if seller has enought tokens to sell the desired amount.
       if (balanceOf[msg.sender] < amount) throw;
       //Checks if seller wants to sell amount of tokens lower than minimum allowed.
-      if (msg.value<minTransferAmount) throw;
+      if (amount < minTransferAmount) throw;
       //Adds the amount to owner's balance.
       balanceOf[this] += amount;
       //Substracts amount from seller's balance.
@@ -178,7 +178,7 @@ contract myZetaToken is owned{
       revenue = amount * sellPrice;
       //Send Ether to the seller.
       if(!msg.sender.send(revenue)){
-        //Throw to prevwnt recursion attacks.
+        //Throw to prevent recursion attacks.
         throw;
       }
       else{
@@ -196,8 +196,8 @@ contract myZetaToken is owned{
     }
 
     //Sets minimum amount of Tokens a user can buy in order to prevent flooding attacks.
-    function setMinTransferAmount(uint minimumTransferAmountInFinney) onlyOwner{
-      minTransferAmount = minimumTransferAmountInFinney * 1 finney;
+    function setMinTransferAmount(uint minimumTransferAmountInTokens) onlyOwner{
+      minTransferAmount = minimumTransferAmountInTokens;
     }
 
 }
