@@ -94,13 +94,16 @@ contract myZetaToken is owned{
         //Build the library of participating enitities omitting owner.
         acntRep: if(msg.sender!=centralMinter){
           //Makes sure we don't have duplicate addresses in the repository.
+          bool isNotAnExistingAccount = true;
           for(i=0; i<accountNumber; i++){
             if(accountRepository[i]==msg.sender){
-              break acntRep;
+              bool isNotAnExistingAccount = false;
             }
           }
-          accountRepository[accountNumber] = msg.sender;
-          accountNumber+=1;
+          if(isNotAnExistingAccount){
+            accountRepository[accountNumber] = msg.sender;
+            accountNumber+=1;
+          }
         }
 
         //This notifies anyone listening that transfer took place.
