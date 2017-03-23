@@ -92,7 +92,7 @@ contract myZetaToken is owned{
         balanceOf[_to] += _value;
 
         //Build the library of participating enitities omitting owner.
-        acntRep: if(msg.sender!=centralMinter){
+        if(msg.sender!=centralMinter){
           //Makes sure we don't have duplicate addresses in the repository.
           bool isNotAnExistingAccount = true;
           for(i=0; i<accountNumber; i++){
