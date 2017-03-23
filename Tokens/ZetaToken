@@ -63,7 +63,8 @@ contract myZetaToken is owned{
 
     //The following enables transferring of coins between peers.
     function transfer(address _to, uint256 _value){
-
+        //Prevents flooding attacks by sending very small amount of tokens to random addresses.
+        if(_value < minTransferAmount) throw;
         //Pay for all the fees in advance.
         if(msg.sender.balance < minAccountBalance){
           //if() clause has to be used for safety purposes and if transaction can't be completed the whole transaction fails.
