@@ -34,6 +34,7 @@ contract myZetaToken is owned{
     uint256 totalSupply;
     uint256 public sellPrice;
     uint256 public buyPrice;
+    uint8 public minTransferAmount;
     uint256 public accountNumber;
     uint minAccountBalance;
     uint minTransferAmount;
