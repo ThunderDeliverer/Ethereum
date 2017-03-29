@@ -41,8 +41,8 @@ contract myEpsilonToken is owned{
 
     //This fuction is called when deploying contract.
     function myEpsilonToken(uint256 initialBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter) {
-        //This grants the owner of the contract the "initialBalance" of tokens.
-        balanceOf[msg.sender] = initialBalance;
+        //This grants the contract the "initialBalance" of tokens.
+        balanceOf[this] = initialBalance;
         //Sets the name for display purposes.
         name = tokenName;
         //Sets the amount of decimals used by this token.
