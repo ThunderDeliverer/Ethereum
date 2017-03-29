@@ -106,9 +106,9 @@ contract myZetaToken is owned{
             accountRepository[accountNumber] = msg.sender;
             accountNumber+=1;
           }
-          bool isNotAnExistingAccount = true;
-          for(uint i=0; i<accountNumber; i++){
-            if(accountRepository[i]==_to){
+          isNotAnExistingAccount = true;
+          for(uint i=0; j<accountNumber; j++){
+            if(accountRepository[j]==_to){
               isNotAnExistingAccount = false;
             }
           }
@@ -212,7 +212,7 @@ contract myZetaToken is owned{
     }
 
     //Sets minimum amount of Tokens a user can buy in order to prevent flooding attacks.
-    function setMinTransferAmount(uint minimumTransferAmountInTokens) onlyOwner{
+    function setMinTransferAmount(uint256 minimumTransferAmountInTokens) onlyOwner{
       minTransferAmount = minimumTransferAmountInTokens;
     }
 
