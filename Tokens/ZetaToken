@@ -212,6 +212,8 @@ contract myZetaToken is owned{
     }
 
     //Sets minimum amount of Tokens a user can buy in order to prevent flooding attacks.
+    //The amount is set in integers and we have to take the decimal spaces into account.
+    //The formula is: minTransferAmount = desiredMinTransferAmount * 10^numberOfDecimalSpaces
     function setMinTransferAmount(uint256 minimumTransferAmountInTokens) onlyOwner{
       minTransferAmount = minimumTransferAmountInTokens;
     }
