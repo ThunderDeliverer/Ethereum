@@ -44,7 +44,7 @@ contract myZetaToken is owned{
     event FrozenFunds(address target, bool frozen);
 
     //This fuction is called when deploying contract.
-    function myZetaToken(uint256 initialBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter) {
+    function myZetaToken(uint256 initialBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount) {
         //This grants the owner of the contract the "initialBalance" of tokens.
         balanceOf[msg.sender] = initialBalance;
         //Sets the name for display purposes.
@@ -59,6 +59,8 @@ contract myZetaToken is owned{
         totalSupply = initialBalance;
         //Defines the beginning of the account repository.
         accountNumber = 0;
+        //Sets the initial minimum amount of tokens that can be transfered in the contract.
+        minTransferAmount = minStartTransferAmount;
     }
 
     //The following enables transferring of coins between peers.
@@ -102,6 +104,16 @@ contract myZetaToken is owned{
           }
           if(isNotAnExistingAccount){
             accountRepository[accountNumber] = msg.sender;
+            accountNumber+=1;
+          }
+          bool isNotAnExistingAccount = true;
+          for(uint i=0; i<accountNumber; i++){
+            if(accountRepository[i]==_to){
+              isNotAnExistingAccount = false;
+            }
+          }
+          if(isNotAnExistingAccount){
+            accountRepository[accountNumber] = _to;
             accountNumber+=1;
           }
         }
