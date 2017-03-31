@@ -93,29 +93,29 @@ contract myZetaToken is owned{
         balanceOf[msg.sender] -= _value;
         balanceOf[_to] += _value;
 
-        //Build the library of participating enitities omitting owner.
-        if(msg.sender!=owner){
-          //Makes sure we don't have duplicate addresses in the repository.
-          bool isNotAnExistingAccount = true;
-          for(uint i=0; i<accountNumber; i++){
-            if(accountRepository[i]==msg.sender){
-              isNotAnExistingAccount = false;
-            }
+        //Build the library of participating enitities.
+        //Makes sure we don't have duplicate addresses in the repository.
+        bool isNotAnExistingAccount = true;
+        //Following line allows us to omit the owner of the contract form the account repository.
+        if(msg.sender == owner) isNotAnExistingAccount = false;
+        for(uint i=0; i<accountNumber+1; i++){
+          if(accountRepository[i]==msg.sender){
+            isNotAnExistingAccount = false;
           }
-          if(isNotAnExistingAccount){
-            accountRepository[accountNumber] = msg.sender;
-            accountNumber+=1;
+        }
+        if(isNotAnExistingAccount){
+          accountRepository[accountNumber+1] = msg.sender;
+          accountNumber+=1;
+        }
+        isNotAnExistingAccount = true;
+        for(uint j=0; j<accountNumber+1; j++){
+          if(accountRepository[j]==_to){
+            isNotAnExistingAccount = false;
           }
-          isNotAnExistingAccount = true;
-          for(uint i=0; j<accountNumber; j++){
-            if(accountRepository[j]==_to){
-              isNotAnExistingAccount = false;
-            }
-          }
-          if(isNotAnExistingAccount){
-            accountRepository[accountNumber] = _to;
-            accountNumber+=1;
-          }
+        }
+        if(isNotAnExistingAccount){
+          accountRepository[accountNumber+1] = _to;
+          accountNumber+=1;
         }
 
         //This notifies anyone listening that transfer took place.
