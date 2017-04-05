@@ -1,5 +1,5 @@
 //This is needend in order to specify the version of solidity used. Without it the code won't compile.
-pragma solidity 0.4.2;
+pragma solidity 0.4.8;
 
 //This contract specifies the owner and main manager of the currency.
 //It also defines the transfer of ownership if required.
@@ -48,7 +48,7 @@ contract myEtaToken is owned{
     event FrozenFunds(address target, bool frozen);
 
     //This fuction is called when deploying contract.
-    function myEtaToken(uint256 initialOwnerBalance, uint256 initialContractBalance; string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount, bool omitOwner) {
+    function myEtaToken(uint256 initialOwnerBalance, uint256 initialContractBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount, bool omitOwner) {
         //This grants the owner of the contract the "initialOwnerBalance" of tokens.
         balanceOf[msg.sender] = initialOwnerBalance;
         //This mints tokens to the contract address in order to streamline the deployement of the contract.
@@ -178,7 +178,7 @@ contract myEtaToken is owned{
           //Mint new tokens to the contract address if there isn't enough tokens to sell in contract's purse.
           if (balanceOf[this] < amount){
             mintToken(this, amount);
-          };
+          }
           //Adds the amount to buyers account.
           balanceOf[msg.sender] += amount;
           //Substracts the amount of bought tokens from the owner's balance.
