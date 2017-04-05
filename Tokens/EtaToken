@@ -22,10 +22,6 @@ contract owned{
 
 //Add the capability to the contract to mint its own tokens if a user wants to buy more than currently available.
 
-//Add the ability to decide whether we want to allow owner account into the accountRepository or not.
-  //Bool that automatically disables write into rhe accountRepository capability.
-
-
 //myEtaToken inherits proprieties from "owned".
 contract myEtaToken is owned{
     //This maps addresses to amount of tokens they own.
@@ -179,8 +175,10 @@ contract myEtaToken is owned{
           amount = msg.value / buyPrice;
           //Checks if seller wants to buy amount of tokens lower than minimum allowed.
           if (amount<minTransferAmount) throw;
-          //Throw if there isn't enough tokens to sell in owners's purse.
-          if (balanceOf[this] < amount) throw;
+          //Mint new tokens to the contract address if there isn't enough tokens to sell in contract's purse.
+          if (balanceOf[this] < amount){
+            mintToken(this, amount);
+          };
           //Adds the amount to buyers account.
           balanceOf[msg.sender] += amount;
           //Substracts the amount of bought tokens from the owner's balance.
