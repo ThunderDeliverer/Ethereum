@@ -43,6 +43,8 @@ contract myEtaToken is owned{
     uint256 public minTransferAmount;
     uint256 public accountNumber;
     uint minAccountBalance;
+    //This is only used once at the deployement to specify if we want to present the owner in the account repository or not.
+    bool hideOwner;
 
     //Events are empty functions that are called to keep track of activities happening in the contract.
     //They have to start with capital letter.
@@ -50,7 +52,7 @@ contract myEtaToken is owned{
     event FrozenFunds(address target, bool frozen);
 
     //This fuction is called when deploying contract.
-    function myEtaToken(uint256 initialOwnerBalance, uint256 initialContractBalance; string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount) {
+    function myEtaToken(uint256 initialOwnerBalance, uint256 initialContractBalance; string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount, bool omitOwner) {
         //This grants the owner of the contract the "initialOwnerBalance" of tokens.
         balanceOf[msg.sender] = initialOwnerBalance;
         //This mints tokens to the contract address in order to streamline the deployement of the contract.
@@ -69,6 +71,8 @@ contract myEtaToken is owned{
         accountNumber = 0;
         //Sets the initial minimum amount of tokens that can be transfered in the contract.
         minTransferAmount = minStartTransferAmount;
+        //Lets the contract know if we want to hide the owner in the account repository or not.
+        hideOwner = omitOwner;
     }
 
         //The following enables transferring of coins between peers.
@@ -105,7 +109,7 @@ contract myEtaToken is owned{
             //Makes sure we don't have duplicate addresses in the repository.
             bool isNotAnExistingAccount = true;
             //Following line allows us to omit the owner of the contract form the account repository.
-            if(msg.sender == owner) isNotAnExistingAccount = false;
+            if(msg.sender == owner) isNotAnExistingAccount = !hideOwner;
             for(uint i=0; i<accountNumber+1; i++){
               if(accountRepository[i]==msg.sender){
                 isNotAnExistingAccount = false;
@@ -115,7 +119,8 @@ contract myEtaToken is owned{
               accountRepository[accountNumber+1] = msg.sender;
               accountNumber+=1;
             }
-            isNotAnExistingAccount = true;
+            isNotAnExistingAccount = true;//Following line allows us to omit the owner of the contract form the account repository.
+            if(_to == owner) isNotAnExistingAccount = !hideOwner;
             for(uint j=0; j<accountNumber+1; j++){
               if(accountRepository[j]==_to){
                 isNotAnExistingAccount = false;
