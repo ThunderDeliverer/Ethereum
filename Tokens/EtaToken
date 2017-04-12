@@ -20,6 +20,14 @@ contract owned{
   }
 }
 
+
+//Add the ability for the contract to pay for as many tokens as it can and return unbought tokens back to the user.
+
+//Add the public calculator that receives the amount of tokens the user wants to buy and returns the value of Ether needed.
+
+//Next version should have admin tiers.
+//Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner.
+
 //myEtaToken inherits proprieties from "owned".
 contract myEtaToken is owned{
     //This maps addresses to amount of tokens they own.
@@ -28,6 +36,8 @@ contract myEtaToken is owned{
     mapping (address => bool) public frozenAccount;
     //This maps an account as present account in the contract; the account owns or has owned tokens.
     mapping (uint256 => address) public accountRepository;
+    //This allows the user to input the desired amount of tokens to buy and receive the amount of Ether needed for the purchase.
+    mapping (uint256 => uint256) public priceOfTokens;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -152,9 +162,13 @@ contract myEtaToken is owned{
         //maintenance, since admin has to call it for every price change. This could be solved with standard data feeds and will
         //probably implemented in one of future versions.
         //Minimum of currency is set as wei and one Ether is 10^18 wei.
-        function setPrices(uint256 newSellPrice, uint256 newBuyPrice) onlyOwner{
+        //I suggest that tokenValuesToMap is always the same in order to not leave some older mappings unchanged.
+        function setPrices(uint256 newSellPrice, uint256 newBuyPrice, uint256 tokenValuesToMap) onlyOwner{
           sellPrice = newSellPrice;
           buyPrice = newBuyPrice;
+          for(uint256 i=0;i<tokenValuesToMap;i++){
+            priceOfTokens[i]=i*newBuyPrice;
+          }
         }
 
         //Function that enables purchase of tokens with Ether.
