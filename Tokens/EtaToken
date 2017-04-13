@@ -21,9 +21,7 @@ contract owned{
 }
 
 
-//Add the ability for the contract to pay for as many tokens as it can and return unbought tokens back to the user.
-
-//Add the public calculator that receives the amount of tokens the user wants to buy and returns the value of Ether needed.
+//If the centralMinter isn't specified at the deploy, appoint the deployer as centralMinter.
 
 //Next version should have admin tiers.
 //Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner.
@@ -211,22 +209,46 @@ contract myEtaToken is owned{
           if (balanceOf[msg.sender] < amount) throw;
           //Checks if seller wants to sell amount of tokens lower than minimum allowed.
           if (amount < minTransferAmount) throw;
-          //Adds the amount to owner's balance.
-          balanceOf[this] += amount;
-          //Substracts amount from seller's balance.
-          balanceOf[msg.sender] -= amount;
           //Calculate revenue from sale.
           revenue = amount * sellPrice;
-          //Send Ether to the seller.
-          if(!msg.sender.send(revenue)){
-            //Throw to prevent recursion attacks.
-            throw;
+          //Check if the contract holds enough Ether to pay the user for all of the Tokens.
+          if(this.balance>revenue){
+            //Adds the amount to owner's balance.
+            balanceOf[this] += amount;
+            //Substracts amount from seller's balance.
+            balanceOf[msg.sender] -= amount;
+            //Send Ether to the seller.
+            if(!msg.sender.send(revenue)){
+              //Throw to prevent recursion attacks.
+              throw;
+            }
+            else{
+              //Notify other nodes of the transaction.
+              Transfer(msg.sender, this, amount);
+              //end function and return revenue.
+              return revenue;
+            }
           }
+          //If there isn't enough Ether to pay for all the Tokens, pay for as many as you can and return the leftover Tokens.
           else{
-            //Notify other nodes of the transaction.
-            Transfer(msg.sender, this, amount);
-            //end function and return revenue.
-            return revenue;
+            //Pay as much as you can.
+            revenue = this.balance;
+            //Calculate the amount of tokens you can pay for.
+            amount = revenue / sellPrice;
+            //Calculate the new contract and user Token values.
+            balanceOf[this] += amount;
+            balanceOf[msg.sender] -= amount;
+            //Send Ether to the seller.
+            if(!msg.sender.send(revenue)){
+              //Throw to prevent recursion attacks.
+              throw;
+            }
+            else{
+              //Notify other nodes of the transaction.
+              Transfer(msg.sender, this, amount);
+              //end function and return revenue.
+              return revenue;
+            }
           }
         }
 
