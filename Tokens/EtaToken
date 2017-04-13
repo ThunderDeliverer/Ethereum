@@ -21,11 +21,6 @@ contract owned{
 }
 
 
-//If the centralMinter isn't specified at the deploy, appoint the deployer as centralMinter.
-
-//Next version should have admin tiers.
-//Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner.
-
 //myEtaToken inherits proprieties from "owned".
 contract myEtaToken is owned{
     //This maps addresses to amount of tokens they own.
@@ -66,7 +61,14 @@ contract myEtaToken is owned{
         //Sets the symbol for display purposes.
         symbol = tokenSymbol;
         //Sets owner of the contract.
-        if(centralMinter != 0) owner = centralMinter;
+        //If address is enetered at the deploy, that is the owner.
+        //Otherwise owner becomes the deployer.
+        if(centralMinter != 0){
+          transferOwnership(centralMinter);
+        }
+        else{
+          owner = msg.sender;
+        }
         //Variable that saves total value of all tokens in order to be able to control and manage quantity and value of currency.
         totalSupply = initialOwnerBalance + initialContractBalance;
         //Defines the beginning of the account repository.
