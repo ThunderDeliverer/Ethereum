@@ -163,12 +163,14 @@ contract myEtaToken is owned{
         //probably implemented in one of future versions.
         //Minimum of currency is set as wei and one Ether is 10^18 wei.
         //I suggest that tokenValuesToMap is always the same in order to not leave some older mappings unchanged.
-        function setPrices(uint256 newSellPrice, uint256 newBuyPrice, uint256 tokenValuesToMap) onlyOwner{
+        function setPrices(uint256 newSellPrice, uint256 newBuyPrice/*, uint256 tokenValuesToMap*/) onlyOwner{
           sellPrice = newSellPrice;
           buyPrice = newBuyPrice;
-          for(uint256 i=0;i<tokenValuesToMap;i++){
-            priceOfTokens[i]=i*newBuyPrice;
-          }
+          //The following for sentence alows for mapping the price to desired amount of tokens to buy.
+          //Unfortunately even mapping the prices for 100 tokens costs twice as much as whole contract deploy and is unviable in final deploy.
+          //for(uint256 i=0;i<tokenValuesToMap;i++){
+          //  priceOfTokens[i]=i*newBuyPrice;
+          //}
         }
 
         //Function that enables purchase of tokens with Ether.
