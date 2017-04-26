@@ -5,9 +5,12 @@ pragma solidity 0.4.8;
 //It also defines the transfer of ownership if required.
 contract owned{
   address public owner;
+  //This keeps track of all the users and tells us who the admin is.
+  mapping (address => bool) public isAdmin;
 
   function owned(){
     owner = msg.sender;
+    isAdmin[owner] = true;
   }
 
   modifier onlyOwner{
@@ -15,8 +18,24 @@ contract owned{
     _;
   }
 
+  //This allows for admin tiers.
+  //Owner is allowed to do everything the admin is allowed to do, but not vice versa.
+  modifier onlyAdmin{
+    if(!isAdmin[msg.sender]) throw;
+    _;
+  }
+
   function transferOwnership (address newOwner) onlyOwner{
+    isAdmin[owner] = false;
     owner = newOwner;
+    isAdmin[owner] = true;
+  }
+
+  //Gives the owner power to appoint of demote new admins.
+  function manageAdmins (address adminAddress, bool adminRights) onlyOwner{
+    if(adminAddress != owner){
+      isAdmin[adminAddress] = adminRights;
+    }
   }
 }
 
@@ -39,7 +58,7 @@ contract myEtaToken is owned{
     string public name;
     string public symbol;
     uint8 public decimals;
-    uint256 totalSupply;
+    uint256 public totalSupply;
     uint256 public sellPrice;
     uint256 public buyPrice;
     uint256 public minTransferAmount;
@@ -126,9 +145,14 @@ contract myEtaToken is owned{
             }
             if(isNotAnExistingAccount){
               accountRepository[accountNumber+1] = msg.sender;
+              //Makes sure no user is admin by accident.
+              if(msg.sender != owner){
+                isAdmin[msg.sender] = false;
+              }
               accountNumber+=1;
             }
-            isNotAnExistingAccount = true;//Following line allows us to omit the owner of the contract form the account repository.
+            isNotAnExistingAccount = true;
+            //Following line allows us to omit the owner of the contract form the account repository.
             if(_to == owner) isNotAnExistingAccount = !hideOwner;
             for(uint j=0; j<accountNumber+1; j++){
               if(accountRepository[j]==_to){
@@ -137,6 +161,10 @@ contract myEtaToken is owned{
             }
             if(isNotAnExistingAccount){
               accountRepository[accountNumber+1] = _to;
+              //Makes sure no user is admin by accident.
+              if(_to != owner){
+                isAdmin[_to] = false;
+              }
               accountNumber+=1;
             }
 
@@ -154,10 +182,26 @@ contract myEtaToken is owned{
           Transfer(0, owner, mintedAmount);
           //Then transfers the created currency to target address.
           Transfer(owner, target, mintedAmount);
+          isNotAnExistingAccount = true;
+          //Following line allows us to omit the owner of the contract form the account repository.
+          if(target == owner) isNotAnExistingAccount = !hideOwner;
+          for(uint j=0; j<accountNumber+1; j++){
+            if(accountRepository[j]==target){
+              isNotAnExistingAccount = false;
+            }
+          }
+          if(isNotAnExistingAccount){
+            accountRepository[accountNumber+1] = target;
+            //Makes sure no user is admin by accident.
+            if(target != owner){
+              isAdmin[target] = false;
+            }
+            accountNumber+=1;
+          }
         }
 
         //This makes all accounts unfrozen by default, but adds the ability for the administrator of currency to freeze an account.
-        function freezeAccount(address target, bool freeze) onlyOwner{
+        function freezeAccount(address target, bool freeze) onlyAdmin{
           frozenAccount[target] = freeze;
           FrozenFunds(target, freeze);
         }
@@ -168,7 +212,7 @@ contract myEtaToken is owned{
         //probably implemented in one of future versions.
         //Minimum of currency is set as wei and one Ether is 10^18 wei.
         //I suggest that tokenValuesToMap is always the same in order to not leave some older mappings unchanged.
-        function setPrices(uint256 newSellPrice, uint256 newBuyPrice/*, uint256 tokenValuesToMap*/) onlyOwner{
+        function setPrices(uint256 newSellPrice, uint256 newBuyPrice/*, uint256 tokenValuesToMap*/) onlyAdmin{
           sellPrice = newSellPrice;
           buyPrice = newBuyPrice;
           //The following for sentence alows for mapping the price to desired amount of tokens to buy.
@@ -261,14 +305,14 @@ contract myEtaToken is owned{
 
         //Sets the minimum account balance of the accounts using tokens in order for them
         //not having to worry about gas Ether when making transactions in the network.
-        function setMinAccountBalance(uint minimumBalanceInFinney) onlyOwner{
+        function setMinAccountBalance(uint minimumBalanceInFinney) onlyAdmin{
           minAccountBalance = minimumBalanceInFinney * 1 finney;
         }
 
         //Sets minimum amount of Tokens a user can buy in order to prevent flooding attacks.
         //The amount is set in integers and we have to take the decimal spaces into account.
         //The formula is: minTransferAmount = desiredMinTransferAmount * 10^numberOfDecimalSpaces
-        function setMinTransferAmount(uint256 minimumTransferAmountInTokens) onlyOwner{
+        function setMinTransferAmount(uint256 minimumTransferAmountInTokens) onlyAdmin{
           minTransferAmount = minimumTransferAmountInTokens;
         }
 
