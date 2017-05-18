@@ -1,5 +1,5 @@
 //This is needend in order to specify the version of solidity used. Without it the code won't compile.
-pragma solidity 0.4.8;
+pragma solidity 0.4.11;
 
 //This contract specifies the owner and main manager of the currency.
 //It also defines the transfer of ownership if required.
@@ -39,14 +39,34 @@ contract owned{
   }
 }
 
+//🤔 === Feature in testing phase.
+//🤠 === Feature tamed.
 
 //Next version should have admin tiers.
-//Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner.
+//Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner. 🤠
 
-//Research and add automatic Ether transfer when contract value reaches a certain amount if possible.
+//Ability for owner to trigger Ether transfer.  🤠
 
-//myEtaToken inherits proprieties from "owned".
-contract myEtaToken is owned{
+//Ability to only send Ether to the contract. 🤠
+
+//Fix automatic coin minting while buying tokens in case there aren't enough in contract walet in Solidity 0.4.11.
+
+//Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤔
+
+//Add automatic calculation of necessary remaining Ether in the contracr (enough to buy back all tokens)
+//and only return the pure revenue back to the owner.
+
+//Implement the ability for user to manually initiate funds transfer.
+//Also make sure the user can request certain amount of Ether but can't retrieve more that the Ether reserve dictates.
+//If owner whishes to retrieve the amount that would deplete the reserve all of the Ether except the reserve is transfered.
+
+//Also add a function that alows admin to send Ether to the contract without any other operations since it was prevented in
+//recent versions of Solidity.
+
+//In the developement instances most of the variables are public in order to provide better
+//oversight and troubleshooting capabilities. This should be changed in production deployement.
+//myThetaToken inherits proprieties from "owned".
+contract myThetaToken is owned{
     //This maps addresses to amount of tokens they own.
     mapping (address => uint256) public balanceOf;
     //This maps addresses with permissions if they can transfer and receive funds or not.
@@ -64,8 +84,13 @@ contract myEtaToken is owned{
     uint256 public minTransferAmount;
     uint256 public accountNumber;
     uint minAccountBalance;
+    uint256 public currencyReserve;
+    uint256 public currencyHoldLimit;
+    address public fundsTransferTarget;
     //This is only used once at the deployement to specify if we want to present the owner in the account repository or not.
-    bool hideOwner;
+    bool public hideOwner;
+                          //For testing purposes only.
+                          uint256 public valueOfTheContract = this.balance;
 
     //Events are empty functions that are called to keep track of activities happening in the contract.
     //They have to start with capital letter.
@@ -73,7 +98,7 @@ contract myEtaToken is owned{
     event FrozenFunds(address target, bool frozen);
 
     //This fuction is called when deploying contract.
-    function myEtaToken(uint256 initialOwnerBalance, uint256 initialContractBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount, bool omitOwner) {
+    function myThetaToken(uint256 initialOwnerBalance, uint256 initialContractBalance, string tokenName, uint8 decimalUnits, string tokenSymbol, address centralMinter, uint256 minStartTransferAmount, bool omitOwner, uint256 initialReserve, uint256 initialCurrencyHoldLimit, address initialfundsTransferTargetAddress) {
         //This grants the owner of the contract the "initialOwnerBalance" of tokens.
         balanceOf[msg.sender] = initialOwnerBalance;
         //This mints tokens to the contract address in order to streamline the deployement of the contract.
@@ -101,6 +126,18 @@ contract myEtaToken is owned{
         minTransferAmount = minStartTransferAmount;
         //Lets the contract know if we want to hide the owner in the account repository or not.
         hideOwner = omitOwner;
+        //Sets the initial amount of Ether that has to be present in the contract at all times.
+        //Note that the reserve first has to be reached in order for the contract to hold it.
+        currencyReserve = initialReserve;
+        //Sets the threshold that triggers the transfer of funds from contract to the owner.
+        currencyHoldLimit = initialCurrencyHoldLimit;
+        //Sets the target of automatic transfer. If blank it is automatically set to owner's address.
+        if(initialfundsTransferTargetAddress != 0){
+          fundsTransferTarget = initialfundsTransferTargetAddress;
+        }
+        else{
+          fundsTransferTarget = owner;
+        }
     }
 
         //The following enables transferring of coins between peers.
@@ -170,6 +207,9 @@ contract myEtaToken is owned{
 
             //This notifies anyone listening that transfer took place.
             Transfer(msg.sender, _to, _value);
+
+            //Check if there is enough Ether to trigger automatic transfer after the transaction.
+            automaticTransfer();
         }
 
         //This function enables owner to create new tokens.
@@ -182,7 +222,7 @@ contract myEtaToken is owned{
           Transfer(0, owner, mintedAmount);
           //Then transfers the created currency to target address.
           Transfer(owner, target, mintedAmount);
-          isNotAnExistingAccount = true;
+          bool isNotAnExistingAccount = true;
           //Following line allows us to omit the owner of the contract form the account repository.
           if(target == owner) isNotAnExistingAccount = !hideOwner;
           for(uint j=0; j<accountNumber+1; j++){
@@ -241,7 +281,21 @@ contract myEtaToken is owned{
           //Mint new tokens to the contract address if there isn't enough tokens to sell in contract's purse.
           if (balanceOf[this] < amount){
             mintToken(this, amount);
+
+/*
+                                  //For troubleshooting purposes only. Should be called as a function!
+                                  address target = this;
+                                  uint256 mintedAmount = amount;
+                                  //Adds currency to target account in our database.
+                                  balanceOf[target] += mintedAmount;
+                                  //Adds the amount we want to mint to total pool of currency.
+                                  totalSupply += mintedAmount;
+                                  //First adds the desired amount to owner account.
+                                  Transfer(0, owner, mintedAmount);
+                                  //Then transfers the created currency to target address.
+                                  Transfer(owner, target, mintedAmount);*/
           }
+                                  //valueOfTheContract = this.balance;
           //Adds the amount to buyers account.
           balanceOf[msg.sender] += amount;
           //Substracts the amount of bought tokens from the owner's balance.
@@ -250,6 +304,8 @@ contract myEtaToken is owned{
           Transfer(this, msg.sender, amount);
           //Ends function and returns the amount.
           return amount;
+          //Check if there is enough Ether to trigger automatic transfer after the transaction.
+          automaticTransfer();
         }
 
         //Function that enables selling of tokens for Ether.
@@ -301,6 +357,10 @@ contract myEtaToken is owned{
               return revenue;
             }
           }
+          //Check if there is enough Ether to trigger automatic transfer after the transaction.
+          //While it may appear a bit odd to add this into the sell function, there could be some Ether
+          //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
+          automaticTransfer();
         }
 
         //Sets the minimum account balance of the accounts using tokens in order for them
@@ -316,4 +376,45 @@ contract myEtaToken is owned{
           minTransferAmount = minimumTransferAmountInTokens;
         }
 
+        //This function sets how much Ether can contract hold before transfering some to owners account.
+        //It can also be used to target a specific wallet address if user doesn't want Ether to be automatically sent
+        //to their account.
+        //Every time user sets the transfer threshold they must specify the target address if they don't want for
+        //the contract to use their own address.
+        //Please note that both threshold as well as reserve have to be computed in wei (10^-18 Ether).
+        function setThresholdTransferValue(uint256 threshold, uint256 reserve, address targetAddress) onlyOwner{
+          currencyReserve = reserve;
+          currencyHoldLimit = threshold;
+          if(targetAddress != 0){
+            fundsTransferTarget = targetAddress;
+          }
+        }
+
+        //Enables the admin to retrieve funds from the contract.
+        function retrieveFunds(uint256 amountToRetrieveInWei) onlyOwner{
+          if(amountToRetrieveInWei > (this.balance - currencyReserve)){
+            if(!fundsTransferTarget.send(this.balance - currencyReserve)){
+              throw;
+            }
+          }
+          else{
+            if(!fundsTransferTarget.send(amountToRetrieveInWei)){
+              throw;
+            }
+          }
+        }
+
+        //Function that powers the automatic retrieval of funds.
+        function automaticTransfer() internal{
+          //First check if the automatic transfer conditions are met.
+          if(this.balance > currencyHoldLimit){
+            if(!fundsTransferTarget.send(this.balance - currencyReserve)){
+              throw;
+            }
+          }
+        }
+
+        //This is a fallback function and allows the owner to send Ether to the contract without having to
+        //call some other actions in post 0.4.0 Solidity.
+        function () payable{}
     }
