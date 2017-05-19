@@ -41,6 +41,7 @@ contract owned{
 
 //🤔 === Feature in testing phase.
 //🤠 === Feature tamed.
+//😵 === Test failed.
 
 //Next version should have admin tiers.
 //Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner. 🤠
@@ -49,9 +50,9 @@ contract owned{
 
 //Ability to only send Ether to the contract. 🤠
 
-//Fix automatic coin minting while buying tokens in case there aren't enough in contract walet in Solidity 0.4.11.
+//Fix automatic coin minting while buying tokens in case there aren't enough in contract walet in Solidity 0.4.11. 😵
 
-//Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤔
+//Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤠
 
 //Add automatic calculation of necessary remaining Ether in the contracr (enough to buy back all tokens)
 //and only return the pure revenue back to the owner.
@@ -138,6 +139,8 @@ contract myThetaToken is owned{
         else{
           fundsTransferTarget = owner;
         }
+        //This allows the contract to automate some behaviours (like token minting if there aren't enough).
+        isAdmin[this] = true;
     }
 
         //The following enables transferring of coins between peers.
@@ -240,6 +243,19 @@ contract myThetaToken is owned{
           }
         }
 
+        //This function allows admins to create new tokens to the contract address.
+        //Unlike owner they can't just allocate desired amount of tokens to an address.
+        function limitedMintToken(uint256 mintedAmount) internal onlyAdmin{
+          //Adds currency to target account in our database.
+          balanceOf[this] += mintedAmount;
+          //Adds the amount we want to mint to total pool of currency.
+          totalSupply += mintedAmount;
+          //First adds the desired amount to owner account.
+          Transfer(0, owner, mintedAmount);
+          //Then transfers the created currency to target address.
+          Transfer(owner, this, mintedAmount);
+        }
+
         //This makes all accounts unfrozen by default, but adds the ability for the administrator of currency to freeze an account.
         function freezeAccount(address target, bool freeze) onlyAdmin{
           frozenAccount[target] = freeze;
@@ -280,32 +296,20 @@ contract myThetaToken is owned{
           if (amount<minTransferAmount) throw;
           //Mint new tokens to the contract address if there isn't enough tokens to sell in contract's purse.
           if (balanceOf[this] < amount){
-            mintToken(this, amount);
-
-/*
-                                  //For troubleshooting purposes only. Should be called as a function!
-                                  address target = this;
-                                  uint256 mintedAmount = amount;
-                                  //Adds currency to target account in our database.
-                                  balanceOf[target] += mintedAmount;
-                                  //Adds the amount we want to mint to total pool of currency.
-                                  totalSupply += mintedAmount;
-                                  //First adds the desired amount to owner account.
-                                  Transfer(0, owner, mintedAmount);
-                                  //Then transfers the created currency to target address.
-                                  Transfer(owner, target, mintedAmount);*/
+            limitedMintToken(amount);
           }
-                                  //valueOfTheContract = this.balance;
           //Adds the amount to buyers account.
           balanceOf[msg.sender] += amount;
           //Substracts the amount of bought tokens from the owner's balance.
           balanceOf[this] -= amount;
           //Initiates the Transfer() event in order to notify others.
           Transfer(this, msg.sender, amount);
-          //Ends function and returns the amount.
-          return amount;
+                              //Delete when done testing.
+                              valueOfTheContract = this.balance;
           //Check if there is enough Ether to trigger automatic transfer after the transaction.
           automaticTransfer();
+          //Ends function and returns the amount.
+          return amount;
         }
 
         //Function that enables selling of tokens for Ether.
@@ -332,6 +336,10 @@ contract myThetaToken is owned{
             else{
               //Notify other nodes of the transaction.
               Transfer(msg.sender, this, amount);
+              //Check if there is enough Ether to trigger automatic transfer after the transaction.
+              //While it may appear a bit odd to add this into the sell function, there could be some Ether
+              //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
+              automaticTransfer();
               //end function and return revenue.
               return revenue;
             }
@@ -353,14 +361,14 @@ contract myThetaToken is owned{
             else{
               //Notify other nodes of the transaction.
               Transfer(msg.sender, this, amount);
+              //Check if there is enough Ether to trigger automatic transfer after the transaction.
+              //While it may appear a bit odd to add this into the sell function, there could be some Ether
+              //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
+              automaticTransfer();
               //end function and return revenue.
               return revenue;
             }
           }
-          //Check if there is enough Ether to trigger automatic transfer after the transaction.
-          //While it may appear a bit odd to add this into the sell function, there could be some Ether
-          //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
-          automaticTransfer();
         }
 
         //Sets the minimum account balance of the accounts using tokens in order for them
