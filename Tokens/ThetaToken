@@ -50,7 +50,7 @@ contract owned{
 
 //Ability to only send Ether to the contract. 🤠
 
-//Fix automatic coin minting while buying tokens in case there aren't enough in contract walet in Solidity 0.4.11. 😵
+//Fix automatic coin minting while buying tokens in case there aren't enough in contract walet in Solidity 0.4.11. 🤠
 
 //Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤠
 
@@ -139,8 +139,6 @@ contract myThetaToken is owned{
         else{
           fundsTransferTarget = owner;
         }
-        //This allows the contract to automate some behaviours (like token minting if there aren't enough).
-        isAdmin[this] = true;
     }
 
         //The following enables transferring of coins between peers.
@@ -245,7 +243,7 @@ contract myThetaToken is owned{
 
         //This function allows admins to create new tokens to the contract address.
         //Unlike owner they can't just allocate desired amount of tokens to an address.
-        function limitedMintToken(uint256 mintedAmount) internal onlyAdmin{
+        function limitedMintToken(uint256 mintedAmount) internal{
           //Adds currency to target account in our database.
           balanceOf[this] += mintedAmount;
           //Adds the amount we want to mint to total pool of currency.
