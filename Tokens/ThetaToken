@@ -392,11 +392,11 @@ contract myThetaToken is owned{
         //the contract to use their own address.
         //Please note that both threshold as well as reserve have to be computed in wei (10^-18 Ether).
         function setThresholdTransferValue(uint256 threshold, uint256 reserve, address targetAddress) onlyOwner{
+        //To keep automatically calculated reserve if we don't change the value.
+        if(reserve != 0){
           currencyReserve = reserve;
-          //To keep automatically calculated threshold if we don't change the value.
-          if(threshold != 0){
-            currencyHoldLimit = threshold;
-          }
+        }
+        currencyHoldLimit = threshold;
           if(targetAddress != 0){
             fundsTransferTarget = targetAddress;
           }
