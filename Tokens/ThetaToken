@@ -42,6 +42,7 @@ contract owned{
 //🤔 === Feature in testing phase.
 //🤠 === Feature tamed.
 //😵 === Test failed.
+//🚧 === Under construction.
 
 //Next version should have admin tiers.
 //Do it with onlyOwner and onlyAdmin limiters, where owner is admin, but and admin isn't owner. 🤠
@@ -54,12 +55,12 @@ contract owned{
 
 //Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤠
 
-//Add automatic calculation of necessary remaining Ether in the contracr (enough to buy back all tokens)
-//and only return the pure revenue back to the owner.
+//Add automatic calculation of necessary remaining Ether in the contract (enough to buy back all tokens)
+//and only return the pure revenue back to the owner. 🤔
 
 //Implement the ability for user to manually initiate funds transfer.
 //Also make sure the user can request certain amount of Ether but can't retrieve more that the Ether reserve dictates.
-//If owner whishes to retrieve the amount that would deplete the reserve all of the Ether except the reserve is transfered.
+//If owner whishes to retrieve the amount that would deplete the reserve all of the Ether except the reserve is transfered. 🤔
 
 //Also add a function that alows admin to send Ether to the contract without any other operations since it was prevented in
 //recent versions of Solidity.
@@ -269,6 +270,8 @@ contract myThetaToken is owned{
         function setPrices(uint256 newSellPrice, uint256 newBuyPrice/*, uint256 tokenValuesToMap*/) onlyAdmin{
           sellPrice = newSellPrice;
           buyPrice = newBuyPrice;
+          //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
           //The following for sentence alows for mapping the price to desired amount of tokens to buy.
           //Unfortunately even mapping the prices for 100 tokens costs twice as much as whole contract deploy and is unviable in final deploy.
           //for(uint256 i=0;i<tokenValuesToMap;i++){
@@ -390,7 +393,10 @@ contract myThetaToken is owned{
         //Please note that both threshold as well as reserve have to be computed in wei (10^-18 Ether).
         function setThresholdTransferValue(uint256 threshold, uint256 reserve, address targetAddress) onlyOwner{
           currencyReserve = reserve;
-          currencyHoldLimit = threshold;
+          //To keep automatically calculated threshold if we don't change the value.
+          if(threshold != 0){
+            currencyHoldLimit = threshold;
+          }
           if(targetAddress != 0){
             fundsTransferTarget = targetAddress;
           }
