@@ -56,14 +56,18 @@ contract owned{
 //Research and add automatic Ether transfer when contract value reaches a certain amount if possible. 🤠
 
 //Add automatic calculation of necessary remaining Ether in the contract (enough to buy back all tokens)
-//and only return the pure revenue back to the owner. 🤔
+//and only return the pure revenue back to the owner. 🤠
+
+//Make sure the currency reserve changes every time the Tokens are bought and sold. 🤔
 
 //Implement the ability for user to manually initiate funds transfer.
 //Also make sure the user can request certain amount of Ether but can't retrieve more that the Ether reserve dictates.
-//If owner whishes to retrieve the amount that would deplete the reserve all of the Ether except the reserve is transfered. 🤔
+//If owner whishes to retrieve the amount that would deplete the reserve all of the Ether except the reserve is transfered. 🤠
 
 //Also add a function that alows admin to send Ether to the contract without any other operations since it was prevented in
-//recent versions of Solidity.
+//recent versions of Solidity. 🤠
+
+//Fix entity counting and list in all operations. 🤠
 
 //In the developement instances most of the variables are public in order to provide better
 //oversight and troubleshooting capabilities. This should be changed in production deployement.
@@ -167,49 +171,16 @@ contract myThetaToken is owned{
                 //by the contract prior to it are reversed. It unfortunately uses more gas than return.
                 throw;
             }
-
             //This substract the token number from sender and adds it to receiver.
             balanceOf[msg.sender] -= _value;
             balanceOf[_to] += _value;
-
-            //Build the library of participating enitities.
-            //Makes sure we don't have duplicate addresses in the repository.
-            bool isNotAnExistingAccount = true;
-            //Following line allows us to omit the owner of the contract form the account repository.
-            if(msg.sender == owner) isNotAnExistingAccount = !hideOwner;
-            for(uint i=0; i<accountNumber+1; i++){
-              if(accountRepository[i]==msg.sender){
-                isNotAnExistingAccount = false;
-              }
-            }
-            if(isNotAnExistingAccount){
-              accountRepository[accountNumber+1] = msg.sender;
-              //Makes sure no user is admin by accident.
-              if(msg.sender != owner){
-                isAdmin[msg.sender] = false;
-              }
-              accountNumber+=1;
-            }
-            isNotAnExistingAccount = true;
-            //Following line allows us to omit the owner of the contract form the account repository.
-            if(_to == owner) isNotAnExistingAccount = !hideOwner;
-            for(uint j=0; j<accountNumber+1; j++){
-              if(accountRepository[j]==_to){
-                isNotAnExistingAccount = false;
-              }
-            }
-            if(isNotAnExistingAccount){
-              accountRepository[accountNumber+1] = _to;
-              //Makes sure no user is admin by accident.
-              if(_to != owner){
-                isAdmin[_to] = false;
-              }
-              accountNumber+=1;
-            }
-
             //This notifies anyone listening that transfer took place.
             Transfer(msg.sender, _to, _value);
-
+            //Calls entities list function.
+            participatingEntities(msg.sender);
+            participatingEntities(_to);
+            //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+            currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
             //Check if there is enough Ether to trigger automatic transfer after the transaction.
             automaticTransfer();
         }
@@ -224,22 +195,10 @@ contract myThetaToken is owned{
           Transfer(0, owner, mintedAmount);
           //Then transfers the created currency to target address.
           Transfer(owner, target, mintedAmount);
-          bool isNotAnExistingAccount = true;
-          //Following line allows us to omit the owner of the contract form the account repository.
-          if(target == owner) isNotAnExistingAccount = !hideOwner;
-          for(uint j=0; j<accountNumber+1; j++){
-            if(accountRepository[j]==target){
-              isNotAnExistingAccount = false;
-            }
-          }
-          if(isNotAnExistingAccount){
-            accountRepository[accountNumber+1] = target;
-            //Makes sure no user is admin by accident.
-            if(target != owner){
-              isAdmin[target] = false;
-            }
-            accountNumber+=1;
-          }
+          //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+          //Enters target into entities list if not already present.
+          participatingEntities(target);
         }
 
         //This function allows admins to create new tokens to the contract address.
@@ -307,8 +266,12 @@ contract myThetaToken is owned{
           Transfer(this, msg.sender, amount);
                               //Delete when done testing.
                               valueOfTheContract = this.balance;
+          //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
           //Check if there is enough Ether to trigger automatic transfer after the transaction.
           automaticTransfer();
+          //Add the buyer to the entitites list.
+          participatingEntities(msg.sender);
           //Ends function and returns the amount.
           return amount;
         }
@@ -340,8 +303,12 @@ contract myThetaToken is owned{
               //Check if there is enough Ether to trigger automatic transfer after the transaction.
               //While it may appear a bit odd to add this into the sell function, there could be some Ether
               //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
-              automaticTransfer();
+              currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
               //end function and return revenue.
+              automaticTransfer();
+              //Adds seller to the entitites list.
+              participatingEntities(msg.sender);
+              //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
               return revenue;
             }
           }
@@ -362,10 +329,15 @@ contract myThetaToken is owned{
             else{
               //Notify other nodes of the transaction.
               Transfer(msg.sender, this, amount);
+              //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+              currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
               //Check if there is enough Ether to trigger automatic transfer after the transaction.
               //While it may appear a bit odd to add this into the sell function, there could be some Ether
               //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
+              //end function and return revenue.
               automaticTransfer();
+              //Adds seller to the entitites list.
+              participatingEntities(msg.sender);
               //end function and return revenue.
               return revenue;
             }
@@ -422,6 +394,27 @@ contract myThetaToken is owned{
           if(this.balance > currencyHoldLimit){
             if(!fundsTransferTarget.send(this.balance - currencyReserve)){
               throw;
+            }
+          }
+        }
+
+        //Function that builds the participating entities table.
+        function participatingEntities(address entity) internal{
+          //Makes sure we don't have duplicate addresses in the repository.
+          bool isNotAnExistingAccount = true;
+          //Following line allows us to omit the owner of the contract form the account repository.
+          if(entity == owner) isNotAnExistingAccount = !hideOwner;
+          for(uint i=0; i<accountNumber+1; i++){
+            if(accountRepository[i]==entity){
+              isNotAnExistingAccount = false;
+            }
+          }
+          if(isNotAnExistingAccount){
+            accountNumber+=1;
+            accountRepository[accountNumber] = entity;
+            //Makes sure no user is admin by accident.
+            if(entity != owner && !(isAdmin[entity] == true)){
+              isAdmin[entity] = false;
             }
           }
         }
