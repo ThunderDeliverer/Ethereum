@@ -10,7 +10,6 @@ contract owned{
 
   function owned(){
     owner = msg.sender;
-    isAdmin[owner] = true;
   }
 
   modifier onlyOwner{
@@ -21,14 +20,12 @@ contract owned{
   //This allows for admin tiers.
   //Owner is allowed to do everything the admin is allowed to do, but not vice versa.
   modifier onlyAdmin{
-    if(!isAdmin[msg.sender]) throw;
+    if(!(isAdmin[msg.sender] || (msg.sender == owner))) throw;
     _;
   }
 
   function transferOwnership (address newOwner) onlyOwner{
-    isAdmin[owner] = false;
     owner = newOwner;
-    isAdmin[owner] = true;
   }
 
   //Gives the owner power to appoint of demote new admins.
@@ -46,7 +43,14 @@ contract owned{
 
 //Add and remove announcements as the administrator. 🤠
 
-//Add messages to the contract.
+//Administrator can edit certain announcement. 🤠
+
+//Streamline onlyAdmin modifier to not always demand owner is also admin, but just check if the change wants to be
+//executed by owner or admin. 🤠
+
+//Add messages from users to the contract.
+
+//Implemet user silencer (if the user uses inapropriate phrases or language they should be penalised).
 
 //Calculate the cost of the messages based on the length of the message or some other criteria in tokens.
 
@@ -410,9 +414,9 @@ contract myIotaToken is owned{
         function () payable{}
 
         //Allows admin to create announcements.
-        function createAnnouncement(string announcement) onlyAdmin{
+        function createAnnouncement(string announcementText) onlyAdmin{
           numberOfAnnouncements += 1;
-          announcements[numberOfAnnouncements] = announcement;
+          announcements[numberOfAnnouncements] = announcementText;
         }
 
         //Allows admin to remove an announcement and reorders other announcements, so that we don't have any empty spaces.
@@ -421,5 +425,10 @@ contract myIotaToken is owned{
             announcements[i]=announcements[i+1];
           }
           numberOfAnnouncements -= 1;
+        }
+
+        //Gives admin ability to edit announcements.
+        function editAnnouncement (uint256 announcementNumber, string announcementText) onlyAdmin{
+          announcements[announcementNumber] = announcementText;
         }
     }
