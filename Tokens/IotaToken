@@ -7,6 +7,8 @@ contract owned{
   address public owner;
   //This keeps track of all the users and tells us who the admin is.
   mapping (address => bool) public isAdmin;
+  //Keeps track of admin accounts.
+  mapping (address => bool) public isEditor;
 
   function owned(){
     owner = msg.sender;
@@ -24,6 +26,12 @@ contract owned{
     _;
   }
 
+  //Editor makes sure all posts acompanying donations are up to some sort of code.
+  modifier onlyEditor{
+    if(!(isAdmin[msg.sender] || (msg.sender == owner) || isEditor[msg.sender])) throw;
+    _;
+  }
+
   function transferOwnership (address newOwner) onlyOwner{
     owner = newOwner;
   }
@@ -32,6 +40,14 @@ contract owned{
   function manageAdmins (address adminAddress, bool adminRights) onlyOwner{
     if(adminAddress != owner){
       isAdmin[adminAddress] = adminRights;
+    }
+  }
+
+  //Allows owner to appoint editors.
+  function manageEditors (address editorAddress, bool editorRights) onlyOwner{
+    //This contitions are present to make sure owner doesn't appoint itself before transfering ownership to other position.
+    if(editorAddress != owner){
+      isEditor[editorAddress] = editorRights;
     }
   }
 }
@@ -48,9 +64,12 @@ contract owned{
 //Streamline onlyAdmin modifier to not always demand owner is also admin, but just check if the change wants to be
 //executed by owner or admin. 🤠
 
-//Add messages from users to the contract.
+//Add messages from users to the contract. 🤔
 
-//Implemet user silencer (if the user uses inapropriate phrases or language they should be penalised).
+//Make an editor admin that makes sure all messages are up to the code of conduct. 🤔
+//Ideally handled by out of BC software with access to BC.
+
+//Implemet user silencer (if the user uses inapropriate phrases or language they should be penalised). 🤔
 
 //Calculate the cost of the messages based on the length of the message or some other criteria in tokens.
 
@@ -69,6 +88,11 @@ contract myIotaToken is owned{
     mapping (uint256 => uint256) public priceOfTokens;
     //This allows owner of administrator to post announcements.
     mapping (uint256 => string) public announcements;
+    //This allows users to send messages to the contract.
+    //It could be used for collecting voluntary donations on number of occasions.
+    mapping (address => string) public publicMessages;
+    //Marks if the account is allowed to post or not.
+    mapping (address => bool) public bannedFromPosting;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -84,6 +108,7 @@ contract myIotaToken is owned{
     address public fundsTransferTarget;
     //This is only used once at the deployement to specify if we want to present the owner in the account repository or not.
     bool public hideOwner;
+    uint256 public minimumDonation;
                           //For testing purposes only.
                           uint256 public valueOfTheContract = this.balance;
 
@@ -134,6 +159,7 @@ contract myIotaToken is owned{
           fundsTransferTarget = owner;
         }
         numberOfAnnouncements = 0;
+        minimumDonation = 0;
     }
 
         //The following enables transferring of coins between peers.
@@ -430,5 +456,31 @@ contract myIotaToken is owned{
         //Gives admin ability to edit announcements.
         function editAnnouncement (uint256 announcementNumber, string announcementText) onlyAdmin{
           announcements[announcementNumber] = announcementText;
+        }
+
+        //Allows users to post messages to the message board.
+        function postMessage (string messageToPost, uint256 donation){
+          if(bannedFromPosting[msg.sender]){
+            throw;
+          }
+          else{
+            if((donation >= minimumDonation) || (minimumDonation == 0)){
+              publicMessages[msg.sender] = messageToPost;
+            }
+            else{
+              throw;
+            }
+          }
+        }
+
+        //Disables ability of a user to post.
+        function banUserFromPosting (address addressToBan, bool ban) onlyEditor{
+          bannedFromPosting[addressToBan] = ban;
+        }
+
+        //Sets minimum donation amount for message posts.
+        //Please keep in mind that Ethereum doesn't know floating point and you have to padd the value with 0 accordingly.
+        function setMinimumDonations (uint256 newMinimumDonation) onlyAdmin{
+          minimumDonation = newMinimumDonation;
         }
     }
