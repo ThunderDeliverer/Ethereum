@@ -75,7 +75,7 @@ contract owned{
 
 //Measure the length of a message. 🤠
 
-//Calculate the cost of the messages based on the length of the message or some other criteria in tokens.
+//Calculate the cost of the messages based on the length of the message in tokens. 🤠
 
 
 //In the developement instances most of the variables are public in order to provide better
@@ -115,6 +115,8 @@ contract myIotaToken is owned{
     //This is only used once at the deployement to specify if we want to present the owner in the account repository or not.
     bool public hideOwner;
     uint256 public minimumDonation;
+    bool public variableDonation;
+    uint256 public priceOfCharacter;
                           //For testing purposes only.
                           uint256 public valueOfTheContract = this.balance;
 
@@ -474,7 +476,14 @@ contract myIotaToken is owned{
             throw;
           }
           else{
-            if((donation >= minimumDonation) || (minimumDonation == 0)){
+            uint256 donationThreshold;
+            if(variableDonation){
+              donationThreshold = priceOfCharacter * bytes(messageToPost).length;
+            }
+            else{
+              donationThreshold = minimumDonation;
+            }
+            if((donation >= donationThreshold) || (donationThreshold == 0)){
               publicMessages[msg.sender] = messageToPost;
               lengthOfAMessage[msg.sender] = bytes(messageToPost).length;
               balanceOf[msg.sender] -= donation;
@@ -494,7 +503,14 @@ contract myIotaToken is owned{
 
         //Sets minimum donation amount for message posts.
         //Please keep in mind that Ethereum doesn't know floating point and you have to padd the value with 0 accordingly.
-        function setMinimumDonations (uint256 newMinimumDonation) onlyAdmin{
-          minimumDonation = newMinimumDonation;
+        function setMinimumDonations (uint256 newMinimumDonation, bool useVariableDonationThresholds, uint256 characterPricing) onlyAdmin{
+          if(useVariableDonationThresholds){
+            variableDonation = useVariableDonationThresholds;
+            priceOfCharacter = characterPricing;
+          }
+          else{
+            variableDonation = useVariableDonationThresholds;
+            minimumDonation = newMinimumDonation;
+          }
         }
     }
