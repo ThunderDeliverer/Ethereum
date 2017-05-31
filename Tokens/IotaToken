@@ -64,12 +64,16 @@ contract owned{
 //Streamline onlyAdmin modifier to not always demand owner is also admin, but just check if the change wants to be
 //executed by owner or admin. 🤠
 
-//Add messages from users to the contract. 🤔
+//Add messages from users to the contract. 🤠
 
-//Make an editor admin that makes sure all messages are up to the code of conduct. 🤔
+//Make an editor admin that makes sure all messages are up to the code of conduct. 🤠
 //Ideally handled by out of BC software with access to BC.
 
-//Implemet user silencer (if the user uses inapropriate phrases or language they should be penalised). 🤔
+//Implemet user silencer (if the user uses inapropriate phrases or language they should be penalised). 🤠
+
+//Use a function for recalculating necessary Ether reserve in stead of line of code in every function. 🤠
+
+//Measure the length of a message. 🤠
 
 //Calculate the cost of the messages based on the length of the message or some other criteria in tokens.
 
@@ -93,6 +97,8 @@ contract myIotaToken is owned{
     mapping (address => string) public publicMessages;
     //Marks if the account is allowed to post or not.
     mapping (address => bool) public bannedFromPosting;
+                        //Used for testing of string length capabilities.
+                        mapping (address => uint) public lengthOfAMessage;
     string public name;
     string public symbol;
     uint8 public decimals;
@@ -196,7 +202,7 @@ contract myIotaToken is owned{
             participatingEntities(msg.sender);
             participatingEntities(_to);
             //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
-            currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+            setEtherReserve();
             //Check if there is enough Ether to trigger automatic transfer after the transaction.
             automaticTransfer();
         }
@@ -212,7 +218,7 @@ contract myIotaToken is owned{
           //Then transfers the created currency to target address.
           Transfer(owner, target, mintedAmount);
           //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
-          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+          setEtherReserve();
           //Enters target into entities list if not already present.
           participatingEntities(target);
         }
@@ -246,7 +252,7 @@ contract myIotaToken is owned{
           sellPrice = newSellPrice;
           buyPrice = newBuyPrice;
           //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
-          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+          setEtherReserve();
           //The following for sentence alows for mapping the price to desired amount of tokens to buy.
           //Unfortunately even mapping the prices for 100 tokens costs twice as much as whole contract deploy and is unviable in final deploy.
           //for(uint256 i=0;i<tokenValuesToMap;i++){
@@ -283,7 +289,7 @@ contract myIotaToken is owned{
                               //Delete when done testing.
                               valueOfTheContract = this.balance;
           //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
-          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+          setEtherReserve();
           //Check if there is enough Ether to trigger automatic transfer after the transaction.
           automaticTransfer();
           //Add the buyer to the entitites list.
@@ -316,15 +322,15 @@ contract myIotaToken is owned{
             else{
               //Notify other nodes of the transaction.
               Transfer(msg.sender, this, amount);
+              //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+              setEtherReserve();
               //Check if there is enough Ether to trigger automatic transfer after the transaction.
               //While it may appear a bit odd to add this into the sell function, there could be some Ether
               //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
-              currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
-              //end function and return revenue.
               automaticTransfer();
               //Adds seller to the entitites list.
               participatingEntities(msg.sender);
-              //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
+              //end function and return revenue.
               return revenue;
             }
           }
@@ -346,7 +352,7 @@ contract myIotaToken is owned{
               //Notify other nodes of the transaction.
               Transfer(msg.sender, this, amount);
               //Calculate the reserve of Ether necessary to buy back all of the tokens present in the network that aren't owned by the contract.
-              currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+              setEtherReserve();
               //Check if there is enough Ether to trigger automatic transfer after the transaction.
               //While it may appear a bit odd to add this into the sell function, there could be some Ether
               //sent direclty to the contract and therefore wouldnt be picked up by buy() or transfer().
@@ -435,6 +441,10 @@ contract myIotaToken is owned{
           }
         }
 
+        function setEtherReserve() internal{
+          currencyReserve = (totalSupply - balanceOf[this]) * sellPrice;
+        }
+
         //This is a fallback function and allows the owner to send Ether to the contract without having to
         //call some other actions in post 0.4.0 Solidity.
         function () payable{}
@@ -466,6 +476,10 @@ contract myIotaToken is owned{
           else{
             if((donation >= minimumDonation) || (minimumDonation == 0)){
               publicMessages[msg.sender] = messageToPost;
+              lengthOfAMessage[msg.sender] = bytes(messageToPost).length;
+              balanceOf[msg.sender] -= donation;
+              balanceOf[this] += donation;
+              setEtherReserve();
             }
             else{
               throw;
