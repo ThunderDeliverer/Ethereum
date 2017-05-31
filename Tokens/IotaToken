@@ -77,6 +77,8 @@ contract owned{
 
 //Calculate the cost of the messages based on the length of the message in tokens. 🤠
 
+//Editor is able to remove messages that aren't in compliance with comunity standards and block the user at the same time. 🤠
+
 
 //In the developement instances most of the variables are public in order to provide better
 //oversight and troubleshooting capabilities. This should be changed in production deployement.
@@ -512,5 +514,10 @@ contract myIotaToken is owned{
             variableDonation = useVariableDonationThresholds;
             minimumDonation = newMinimumDonation;
           }
+        }
+
+        function removeMessage (address addressOfTheOffender, bool preventThisUserFromPosting) onlyEditor{
+          publicMessages[addressOfTheOffender] = "This message was removed due to comunity guidelines violation.";
+          bannedFromPosting[addressOfTheOffender] = preventThisUserFromPosting;
         }
     }
