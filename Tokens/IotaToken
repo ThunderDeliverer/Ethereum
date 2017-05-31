@@ -89,7 +89,7 @@ contract myIotaToken is owned{
     //This maps an account as present account in the contract; the account owns or has owned tokens.
     mapping (uint256 => address) public accountRepository;
     //This allows the user to input the desired amount of tokens to buy and receive the amount of Ether needed for the purchase.
-    mapping (uint256 => uint256) public priceOfTokens;
+    //mapping (uint256 => uint256) public priceOfTokens;
     //This allows owner of administrator to post announcements.
     mapping (uint256 => string) public announcements;
     //This allows users to send messages to the contract.
@@ -502,7 +502,7 @@ contract myIotaToken is owned{
         }
 
         //Sets minimum donation amount for message posts.
-        //Please keep in mind that Ethereum doesn't know floating point and you have to padd the value with 0 accordingly.
+        //Please keep in mind that Ethereum doesn't know floating point and you have to padd the value with 0s accordingly.
         function setMinimumDonations (uint256 newMinimumDonation, bool useVariableDonationThresholds, uint256 characterPricing) onlyAdmin{
           if(useVariableDonationThresholds){
             variableDonation = useVariableDonationThresholds;
