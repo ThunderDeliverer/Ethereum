@@ -4,10 +4,6 @@ pragma solidity ^0.4.11;
 contract BlindAuction{
 	struct Bid {
 		bytes32 blindedBid;
-		bytes32 calculatedHash;
-		uint value;
-		bool fake;
-		string secret;
 		uint deposit;
 	}
 	address public beneficiary;
@@ -46,7 +42,6 @@ contract BlindAuction{
 //😵 === Test failed.
 //🚧 === Under construction.
 
-//This is a current version and should work when Solidity is fixed and structures accept strings again.
 //Reuse feature 🤔
 
 	//Remember that one time unit is one second.
@@ -84,17 +79,23 @@ contract BlindAuction{
 	//true. Setting "fake" to true and sending not the exact amount are ways to hide the real bid
 	//but still make the required deposit. The same address can place multiple bids.
 	//Use http://emn178.github.io/online-tools/keccak_256.html for calculating hash.
-	function bid(bytes32 _blindedBid, uint _value, bool _fake, string _secret) onlyBefore(biddingEnd) payable{
-		bids[msg.sender][0].blindedBid = _blindedBid;
-		bids[msg.sender][0].calculatedHash = sha3(_value, _fake, _secret);
-		bids[msg.sender][0].value = _value;
-		bids[msg.sender][0].fake = _fake;
-		bids[msg.sender][0].secret = _secret;
-		bids[msg.sender][0].deposit = msg.value;
+	//Value in the hashing mechanism is entered in wei, so take that into account when sending Ether.
+	function bid(bytes32 _blindedBid) onlyBefore(biddingEnd) payable{
+		//if(bids[msg.sender][0].blindedBid == 0x0){
+				bids[msg.sender].push(Bid({
+					blindedBid: _blindedBid,
+					deposit: msg.value
+				}));
+		/*	}
+		else{
+			bids[msg.sender][0].blindedBid = _blindedBid;
+			bids[msg.sender][0].deposit = msg.value;
+		}*/
 	}
 
 	// Reveal your blinded bids. You will get a refund for all correctly blinded invalid bids and for
 	// all bids except for the totally highest one.
+	//Value here is entered in wei, so be sure to take that into account when calculating hash for blindedBid.
 	function reveal(uint _value, bool _fake, string _secret) onlyAfter(biddingEnd) onlyBefore(revealEnd){
 		uint refund;
 		var bid = bids[msg.sender][0];
