@@ -21,7 +21,7 @@ contract BlindAuction{
 	//Allowed withdrawals of previous bids
 	mapping(address => uint) pendingReturns;
 	//Maps all of the participating addresses in order to make the contract reusable.
-	mapping(uint => address) participatingAddresses;
+	mapping(uint => address) public participatingAddresses;
 
 	//Event to notify nodes that auction started and what is being acutioned.
 	event AuctionStarted(address whereToDirectBids, string description);
@@ -45,7 +45,8 @@ contract BlindAuction{
 //😵 === Test failed.
 //🚧 === Under construction.
 
-//Reuse feature 🤔
+//Reuse feature 😵
+//Remove existing bid data and prepare to reuse auction contract. 🚧
 
 	//Remember that one time unit is one second.
 	function BlindAuction(uint biddingTime, uint revealTime, address contractBeneficiary, bool startNow, string descriptionOfAuction){
@@ -76,10 +77,13 @@ contract BlindAuction{
 		revealEnd = biddingEnd + _revealTime;
 		AuctionStarted(this, descriptionOfAuction);
 		for(uint i = 0; i < numberOfParticipants; i++){
-			delete bids[participatingAddresses[i]];
-			participatingAddresses[i] = 0x0;
+			delete bids[participatingAddresses[i]][0].blindedBid;
+			delete bids[participatingAddresses[i]][0].deposit;
+			delete participatingAddresses[i];
 		}
 		numberOfParticipants = 0;
+		highestBidder = 0x0;
+		highestBid = 0;
 	}
 
 	//Place a blinded bid with "_blindedbid" = sha3(value, fake, secret).
