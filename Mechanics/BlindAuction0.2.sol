@@ -77,8 +77,8 @@ contract BlindAuction{
 		revealEnd = biddingEnd + _revealTime;
 		AuctionStarted(this, descriptionOfAuction);
 		for(uint i = 0; i < numberOfParticipants; i++){
-			delete bids[participatingAddresses[i]][0].blindedBid;
-			delete bids[participatingAddresses[i]][0].deposit;
+			delete bids[participatingAddresses[i]][0].blindedBid/* = 0x0*/;
+			delete bids[participatingAddresses[i]][0].deposit/* = 0*/;
 			delete participatingAddresses[i];
 		}
 		numberOfParticipants = 0;
@@ -104,8 +104,8 @@ contract BlindAuction{
 			bids[msg.sender][0].blindedBid = _blindedBid;
 			bids[msg.sender][0].deposit = msg.value;
 		}*/
-		numberOfParticipants += 1;
 		participatingAddresses[numberOfParticipants] = msg.sender;
+		numberOfParticipants += 1;
 	}
 
 	// Reveal your blinded bids. You will get a refund for all correctly blinded invalid bids and for
