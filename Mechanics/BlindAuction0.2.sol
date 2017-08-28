@@ -45,8 +45,8 @@ contract BlindAuction{
 //😵 === Test failed.
 //🚧 === Under construction.
 
-//Reuse feature 😵
-//Remove existing bid data and prepare to reuse auction contract. 🚧
+//Reuse feature 🤠
+//Remove existing bid data and prepare to reuse auction contract. 🤠
 
 	//Remember that one time unit is one second.
 	function BlindAuction(uint biddingTime, uint revealTime, address contractBeneficiary, bool startNow, string descriptionOfAuction){
@@ -77,8 +77,8 @@ contract BlindAuction{
 		revealEnd = biddingEnd + _revealTime;
 		AuctionStarted(this, descriptionOfAuction);
 		for(uint i = 0; i < numberOfParticipants; i++){
-			delete bids[participatingAddresses[i]][0].blindedBid/* = 0x0*/;
-			delete bids[participatingAddresses[i]][0].deposit/* = 0*/;
+			delete bids[participatingAddresses[i]]/*[0].blindedBid = 0x0;
+			delete bids[participatingAddresses[i]][0].deposit = 0*/;
 			delete participatingAddresses[i];
 		}
 		numberOfParticipants = 0;
