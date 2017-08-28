@@ -77,8 +77,7 @@ contract BlindAuction{
 		revealEnd = biddingEnd + _revealTime;
 		AuctionStarted(this, descriptionOfAuction);
 		for(uint i = 0; i < numberOfParticipants; i++){
-			delete bids[participatingAddresses[i]]/*[0].blindedBid = 0x0;
-			delete bids[participatingAddresses[i]][0].deposit = 0*/;
+			delete bids[participatingAddresses[i]];
 			delete participatingAddresses[i];
 		}
 		numberOfParticipants = 0;
@@ -152,7 +151,9 @@ contract BlindAuction{
 	// End the auction and send the highest bid to the beneficiary.
 	function auctionEnd() onlyAfter(revealEnd){
 		if(ended) revert();
-		AuctionEnded(highestBidder, highestBid);
+		if(highestBidder != 0x0){
+			AuctionEnded(highestBidder, highestBid);
+		}
 		ended = true;
 		//We send all the money we have, because some of the refunds might have failed.
 		if(!beneficiary.send(this.balance)) revert();
