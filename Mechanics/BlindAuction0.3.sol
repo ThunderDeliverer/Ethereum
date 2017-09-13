@@ -6,27 +6,49 @@ contract BlindAuction{
 		bytes32 blindedBid;
 		uint deposit;
 	}
-	address public beneficiary;
-	uint public auctionStart;
+	//The first uint256 is always the auction identifier for auction instance.
+	//Allows for mapping beneficiaries to auctions.
+	mapping (uint256 => address) public beneficiaries;
+	//address public beneficiary;
+	//Descriptions of the auctions.
+	mapping (uint256 => string) public descriptions;
+	//Defines time limits and statuses of individual auctions.
+	mapping (uint256 => uint) public auctionsStart;
+	mapping (uint256 => uint) public biddingsEnd;
+	mapping (uint256 => uint) public revealsEnd;
+	mapping (uint256 => bool) public auctionsEnded;
+	/*uint public auctionStart;
 	uint public biddingEnd;
 	uint public revealEnd;
-	bool public ended;
+	bool public ended;*/
 
-	mapping(address => Bid[]) public bids;
+	//Mapping to hold all the bids for an auction.
+	mapping(address => Bid[]) bids;
 
-	address public highestBidder;
+	//Mapping to hold all ste bids for all the auctions.
+	mapping (uint256 => bids) public auctionBids;
+
+	//Displays winning conditions and stats.
+	mapping (uint256 => address) public highestBidders;
+	mapping (uint256 => uint) public highestBid;
+	mapping (uint256 => uint) public numberOfAuctionParticipants;
+	/*address public highestBidder;
 	uint public highestBid;
-	uint public numberOfParticipants;
+	uint public numberOfParticipants;*/
 
-	//Allowed withdrawals of previous bids
-	mapping(address => uint) pendingReturns;
-	//Maps all of the participating addresses in order to make the contract reusable.
-	mapping(uint => address) public participatingAddresses;
+	//Allowed withdrawals of previous bids in auction.
+	mapping (address => uint) pendingReturns;
+	//Allowed withdrawals of previous bids in all auctions.
+	mapping (uint256 => pendingReturns) pendingReturnsPerAuction;
+	//Maps all of the participating addresses in a single auction in order to make the contract reusable.
+	mapping (uint => address) participatingAddresses;
+	//Maps all of the participating addresses in all the auctions.
+	mapping (uint256 => participatingAddresses) public allParticipatingAddresses;
 
 	//Event to notify nodes that auction started and what is being acutioned.
-	event AuctionStarted(address whereToDirectBids, string description);
+	event AuctionStarted(uint256 auctionIdentifier, address whereToDirectBids, string description);
 	//Event to notify nodes about auction ending and who won.
-	event AuctionEnded(address winner, uint highestBid);
+	event AuctionEnded(uint256 auctionIdentifier, address winner, uint highestBid);
 
 	// Modifiers are a convenient way to validate inputs to functions. "onlyBefore" is applied
 	// to "bid" below:
@@ -47,6 +69,7 @@ contract BlindAuction{
 
 //Reuse feature 🤠
 //Remove existing bid data and prepare to reuse auction contract. 🤠
+//Build all of the necessary mapping in order to support multithreading. 🤔
 //Create the ability for multiple instances of auctions to run at the same time. 🚧
 
 	//Remember that one time unit is one second.
