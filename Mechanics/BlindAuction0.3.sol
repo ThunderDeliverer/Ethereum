@@ -6,6 +6,9 @@ contract BlindAuction{
 		bytes32 blindedBid;
 		uint deposit;
 	}
+	//Defines the number of auctions that were ever present in the auction.
+	//Also used for automatic auction identifier upon deploy.
+	uint256 currentNumberOfAuctions;
 	//The first uint256 is always the auction identifier for auction instance.
 	//Allows for mapping beneficiaries to auctions.
 	mapping (uint256 => address) public beneficiaries;
@@ -81,12 +84,20 @@ contract BlindAuction{
 			beneficiary = contractBeneficiary;
 		}
 		if(startNow){
-			auctionStart = now;
+			auctionsStart[currentNumberOfAuctions] = now;
+			biddingsEnd[currentNumberOfAuctions] = now + biddingTime;
+			revealsEnd[currentNumberOfAuctions] = biddingsEnd[currentNumberOfAuctions] + revealTime;
+			/*auctionStart = now;
 			biddingEnd = now + biddingTime;
-			revealEnd = biddingEnd + revealTime;
-			AuctionStarted(this, descriptionOfAuction);
+			revealEnd = biddingEnd + revealTime;*/
+			AuctionStarted(currentNumberOfAuctions, this, descriptionOfAuction);
+
+			currentNumberOfAuctions = 1;
 		}
-		numberOfParticipants = 0;
+		else{
+			currentNumberOfAuctions = 0;
+		}
+		numberOfAuctionParticipants[currentNumberOfAuctions] = 0;
 	}
 
 	function startAuction(uint _biddingTime, uint _revealTime, address _beneficiary, string descriptionOfAuction) onlyAfter(revealEnd){
