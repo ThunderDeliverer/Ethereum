@@ -78,10 +78,10 @@ contract BlindAuction{
 	//Remember that one time unit is one second.
 	function BlindAuction(uint biddingTime, uint revealTime, address contractBeneficiary, bool startNow, string descriptionOfAuction){
 		if(contractBeneficiary == 0){
-			beneficiary = msg.sender;
+			beneficiaries[currentNumberOfAuctions] = msg.sender;
 		}
 		else{
-			beneficiary = contractBeneficiary;
+			beneficiaries[currentNumberOfAuctions] = contractBeneficiary;
 		}
 		if(startNow){
 			auctionsStart[currentNumberOfAuctions] = now;
@@ -100,24 +100,28 @@ contract BlindAuction{
 		numberOfAuctionParticipants[currentNumberOfAuctions] = 0;
 	}
 
-	function startAuction(uint _biddingTime, uint _revealTime, address _beneficiary, string descriptionOfAuction) onlyAfter(revealEnd){
+	function startAuction(uint _biddingTime, uint _revealTime, address _beneficiary, string descriptionOfAuction){
 		if(_beneficiary == 0){
-			beneficiary = msg.sender;
+			beneficiaries[currentNumberOfAuctions] = msg.sender;
 		}
 		else{
-			beneficiary = _beneficiary;
+			beneficiaries[currentNumberOfAuctions] = _beneficiary;
 		}
-		auctionStart = now;
+		auctionsStart[currentNumberOfAuctions] = now;
+		biddingsEnd[currentNumberOfAuctions] = now + _biddingTime;
+		revealsEnd[currentNumberOfAuctions] = biddingsEnd[currentNumberOfAuctions] + _revealTime;
+		/*auctionStart = now;
 		biddingEnd = auctionStart + _biddingTime;
-		revealEnd = biddingEnd + _revealTime;
-		AuctionStarted(this, descriptionOfAuction);
-		for(uint i = 0; i < numberOfParticipants; i++){
+		revealEnd = biddingEnd + _revealTime;*/
+		AuctionStarted(currentNumberOfAuctions, this, descriptionOfAuction);
+		//No need for clearing current auctions, since we support multithreading.
+		/*for(uint i = 0; i < numberOfParticipants; i++){
 			delete bids[participatingAddresses[i]];
 			delete participatingAddresses[i];
 		}
 		numberOfParticipants = 0;
 		highestBidder = 0x0;
-		highestBid = 0;
+		highestBid = 0;*/
 	}
 
 	//Place a blinded bid with "_blindedbid" = sha3(value, fake, secret).
@@ -127,9 +131,9 @@ contract BlindAuction{
 	//but still make the required deposit. The same address can place multiple bids.
 	//Use http://emn178.github.io/online-tools/keccak_256.html for calculating hash.
 	//Value in the hashing mechanism is entered in wei, so take that into account when sending Ether.
-	function bid(bytes32 _blindedBid) onlyBefore(biddingEnd) payable{
+	function bid(uint256 auctionIdentifier, bytes32 _blindedBid) onlyBefore(biddingsEnd[auctionIdentifier]) payable{
 		//if(bids[msg.sender][0].blindedBid == 0x0){
-				bids[msg.sender].push(Bid({
+				auctionBids[auctionIdentifier].bids[msg.sender].push(Bid({
 					blindedBid: _blindedBid,
 					deposit: msg.value
 				}));
@@ -138,17 +142,17 @@ contract BlindAuction{
 			bids[msg.sender][0].blindedBid = _blindedBid;
 			bids[msg.sender][0].deposit = msg.value;
 		}*/
-		participatingAddresses[numberOfParticipants] = msg.sender;
-		numberOfParticipants += 1;
+		allParticipatingAddresses[auctionIdentifier].participatingAddresses[numberOfParticipants] = msg.sender;
+		numberOfAuctionParticipants[auctionIdentifier] += 1;
 	}
 
 	// Reveal your blinded bids. You will get a refund for all correctly blinded invalid bids and for
 	// all bids except for the totally highest one.
 	//Value here is entered in wei, so be sure to take that into account when calculating hash for blindedBid.
-	function reveal(uint _value, bool _fake, string _secret) onlyAfter(biddingEnd) onlyBefore(revealEnd){
+	function reveal(uint256 auctionIdentifier, uint _value, bool _fake, string _secret) onlyAfter(biddingsEnd[auctionIdentifier]) onlyBefore(revealsEnd[auctionIdentifier]){
 		uint refund;
-		var bid = bids[msg.sender][0];
-		if(bids[msg.sender][0].blindedBid == sha3(_value, !_fake, _secret)){
+		var bid = auctionBids[auctionIdentifier].bids[msg.sender][0];
+		if(auctionBids[auctionIdentifier].bids[msg.sender][0].blindedBid == sha3(_value, !_fake, _secret)){
 			refund += bid.deposit;
 			if(!_fake && bid.deposit >= _value){
 				if(placeBid(msg.sender, _value))
@@ -161,8 +165,8 @@ contract BlindAuction{
 	}
 
 	//This is an internal function and can only be called upon form the contract itself (or from derived contracts).
-	function placeBid(address bidder, uint value) internal returns (bool success){
-		if(value <= highestBid){
+	function placeBid(uint256 auctionIdentifier, address bidder, uint value) internal returns (bool success){
+		if(value <= highestBid[auctionIdentifier]){
 			return false;
 		}
 		if(highestBidder != 0){
