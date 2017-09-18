@@ -169,31 +169,32 @@ contract BlindAuction{
 		if(value <= highestBid[auctionIdentifier]){
 			return false;
 		}
-		if(highestBidder != 0){
+		if(highestBidders[auctionIdentifier] != 0){
 			//Refund the previously highest bidder.
-			pendingReturns[highestBidder] += highestBid;
+			//pendingReturns[highestBidder] += highestBid;
+			pendingReturnsPerAuction[auctionIdentifier][highestBidder] += highestBid;
 		}
-		highestBid = value;
-		highestBidder = bidder;
+		highestBid[auctionIdentifier] = value;
+		highestBidders[auctionIdentifier] = bidder;
 		return true;
 	}
 
 	// Withdraw a bid that was overbid.
-	function withdraw(){
-		var amount = pendingReturns[msg.sender];
+	function withdraw(uint256 auctionIdentifier){
+		var amount = pendingReturnsPerAuction[auctionIdentifier][msg.sender];
 		// It is important to set this to zero because the recipient can call this function again as a part of the receiving call
 		// before "send" returns (see the remark about conditions ---> effects ---> interaction).
-		pendingReturns[msg.sender] = 0;
+		pendingReturnsPerAuction[auctionIdentifier][msg.sender] = 0;
 		if(!msg.sender.send(amount)) revert(); // If anything fails, this will revert the changes above
 	}
 
 	// End the auction and send the highest bid to the beneficiary.
-	function auctionEnd() onlyAfter(revealEnd){
-		if(ended) revert();
-		if(highestBidder != 0x0){
-			AuctionEnded(highestBidder, highestBid);
+	function auctionEnd(uint256 auctionIdentifier) onlyAfter(revealEnd){
+		if(auctionsEnded[auctionIdentifier]) revert();
+		if(highestBidders[auctionIdentifier] != 0x0){
+			AuctionEnded(auctionIdentifier, highestBidder, highestBid);
 		}
-		ended = true;
+		auctionsEnded[auctionIdentifier] = true;
 		//We send all the money we have, because some of the refunds might have failed.
 		if(!beneficiary.send(this.balance)) revert();
 	}
