@@ -9,7 +9,7 @@ contract BlindAuction{
 	}
 	//Defines the number of auctions that were ever present in the auction.
 	//Also used for automatic auction identifier upon deploy.
-	uint256 currentNumberOfAuctions;
+	uint256 public currentNumberOfAuctions;
 	//The first uint256 is always the auction identifier for auction instance.
 	//Allows for mapping beneficiaries to auctions.
 	mapping (uint256 => address) public beneficiaries;
@@ -27,7 +27,7 @@ contract BlindAuction{
 	bool public ended;*/
 
 	//Mapping to hold all the bids for an auction.
-	mapping (address => Bid[]) bids;
+	mapping (address => Bid[]) public bids;
 
 	//Displays winning conditions and stats.
 	mapping (uint256 => address) public highestBidders;
@@ -43,13 +43,13 @@ contract BlindAuction{
 		uint256 auctionID;
 	}
 	//Allowed withdrawals of previous bids in auction.
-	mapping (address => dueReturns[]) pendingReturns;
+	mapping (address => dueReturns[]) public pendingReturns;
 
 	struct listOfParticipatingAddresses{
 		address participant;
 	}
 	//Maps all of the participating addresses in a single auction in order to make the contract reusable.
-	mapping (uint => listOfParticipatingAddresses[]) participatingAddresses;
+	mapping (uint256 => listOfParticipatingAddresses[]) public participatingAddresses;
 
 	//Event to notify nodes that auction started and what is being acutioned.
 	event AuctionStarted(uint256 auctionIdentifier, address whereToDirectBids, string description);
@@ -74,9 +74,10 @@ contract BlindAuction{
 //🚧 === Under construction.
 
 //Reuse feature 🤠
-//Remove existing bid data and prepare to reuse auction contract. 🤠
 //Build all of the necessary mapping in order to support multithreading. 🤔
 //Create the ability for multiple instances of auctions to run at the same time. 🤔
+//Change "end auction" mechanics so that it doesn't send all of the Ether on the contract to the beneficiary, but only due amount. 🚧
+//Descriptions don't work in first iteration. 🚧
 
 	//Remember that one time unit is one second.
 	function BlindAuction(uint biddingTime, uint revealTime, address contractBeneficiary, bool startNow, string descriptionOfAuction){
@@ -94,7 +95,7 @@ contract BlindAuction{
 			biddingEnd = now + biddingTime;
 			revealEnd = biddingEnd + revealTime;*/
 			AuctionStarted(currentNumberOfAuctions, this, descriptionOfAuction);
-
+			descriptions[currentNumberOfAuctions] = descriptionOfAuction;
 			currentNumberOfAuctions = 1;
 		}
 		else{
@@ -117,6 +118,8 @@ contract BlindAuction{
 		biddingEnd = auctionStart + _biddingTime;
 		revealEnd = biddingEnd + _revealTime;*/
 		AuctionStarted(currentNumberOfAuctions, this, descriptionOfAuction);
+		descriptions[currentNumberOfAuctions] = descriptionOfAuction;
+		currentNumberOfAuctions += 1;
 		//No need for clearing current auctions, since we support multithreading.
 		/*for(uint i = 0; i < numberOfParticipants; i++){
 			delete bids[participatingAddresses[i]];
@@ -139,7 +142,7 @@ contract BlindAuction{
 			bids[msg.sender].push(Bid({
 					blindedBid: _blindedBid,
 					deposit: msg.value,
-					auctionID: auctionIdentifier,
+					auctionID: auctionIdentifier
 				}));
 		/*	}
 		else{
@@ -160,7 +163,7 @@ contract BlindAuction{
 				var bid = bids[msg.sender][i];
 				refund += bid.deposit;
 				if(!_fake && bid.deposit >= _value){
-					if(placeBid(msg.sender, _value))
+					if(placeBid(auctionIdentifier, msg.sender, _value))
 						refund -= _value;
 				}
 				//Make it impossible fot sender to reclaim the same deposit.
@@ -180,7 +183,7 @@ contract BlindAuction{
 			//pendingReturns[highestBidder] += highestBid;
 			for(uint i = 0; i < pendingReturns[msg.sender].length; i++){
 				if(pendingReturns[msg.sender][i].auctionID == auctionIdentifier){
-					pendingReturns[msg.sender][i].amount += highestBid;
+					pendingReturns[msg.sender][i].amount += highestBid[auctionIdentifier];
 				}
 			}
 		}
@@ -192,11 +195,11 @@ contract BlindAuction{
 	// Withdraw a bid that was overbid.
 	function withdraw(uint256 auctionIdentifier){
 		for(uint i = 0; i < pendingReturns[msg.sender].length; i++){
-			if(pendingReturns[msg.sender][i] == auctionIdentifier){
+			if(pendingReturns[msg.sender][i].auctionID == auctionIdentifier){
 				var amount = pendingReturns[msg.sender][i].amount;
 				// It is important to set this to zero because the recipient can call this function again as a part of the receiving call
 				// before "send" returns (see the remark about conditions ---> effects ---> interaction).
-				pendingReturns[msg.sender][i] = 0;
+				pendingReturns[msg.sender][i].amount = 0;
 				if(!msg.sender.send(amount)) revert(); // If anything fails, this will revert the changes above
 			}
 		}
@@ -206,11 +209,11 @@ contract BlindAuction{
 	function auctionEnd(uint256 auctionIdentifier) onlyAfter(revealsEnd[auctionIdentifier]){
 		if(auctionsEnded[auctionIdentifier]) revert();
 		if(highestBidders[auctionIdentifier] != 0x0){
-			AuctionEnded(auctionIdentifier, highestBidder, highestBid);
+			AuctionEnded(auctionIdentifier, highestBidders[auctionIdentifier], highestBid[auctionIdentifier]);
 		}
 		auctionsEnded[auctionIdentifier] = true;
 		//We send all the money we have, because some of the refunds might have failed.
-		if(!beneficiary.send(this.balance)) revert();
+		if(!beneficiaries[auctionIdentifier].send(highestBid[auctionIdentifier])) revert();
 	}
 
 	//Refuse to collect any Ether sent to the Auction without it being part of the function.
